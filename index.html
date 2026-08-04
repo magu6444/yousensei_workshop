@@ -853,35 +853,10 @@
       ctx.clearRect(0, 0, width, height);
 
       const radiusMax = width * (showMetrics ? 0.32 : 0.44);
-      const angles = [
-        -Math.PI / 2,
-        -Math.PI / 2 + (Math.PI * 2 / 5),
-        -Math.PI / 2 + (Math.PI * 4 / 5),
-        -Math.PI / 2 + (Math.PI * 6 / 5),
-        -Math.PI / 2 + (Math.PI * 8 / 5)
-      ];
 
-      const anger = (vibesData.anger || 0) / 100;
-      const sadness = (vibesData.sadness || 0) / 100;
-      const unfairness = (vibesData.unfairness || 0) / 100;
-      const envy = (vibesData.envy || 0) / 100;
-      const voidVal = (vibesData.void || 0) / 100;
-
-      const vibeValues = [anger, unfairness, voidVal, envy, sadness];
-
-      // 5頂点の変形座標
-      let poly5Points = angles.map((a, i) => {
-        const v = vibeValues[i];
-        const r = radiusMax * v;
-        return { x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r };
-      });
-
-      // 本物の 3D WebGL 球体のみを綺麗にレンダリング（周囲の枠線・レーダー格子線・5項目テキストを完全除去してUIをスッキリ化）
-
-      // --- Three.js 本格 3D 球体（Sphere Mesh）描画 ＆ 動的頂点ディスプレイスメント変形 ---
+      // 本物の 3D WebGL 球体のみを綺麗にレンダリング
       const activePhoto = customPhotoImg || capturedPhotoImg || fallbackUserFaceImg;
 
-      // 2D 補助レイヤーキャンバスで Three.js の本格 3D メッシュをオフスクリーンレンダリング
       if (window.THREE && activePhoto && activePhoto.complete && activePhoto.width > 0) {
         if (!canvas._threeRenderer) {
           const threeCanvas = document.createElement('canvas');
@@ -896,7 +871,6 @@
           const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
           camera.position.z = 3.6;
 
-          // 3D ライティング（Directional Light + Ambient Light）
           const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
           scene.add(ambientLight);
 
@@ -904,10 +878,9 @@
           dirLight.position.set(2, 3, 4);
           scene.add(dirLight);
 
-          // 本物の 3D 球体（SphereGeometry: 64x64 分割）
-          const geometry = new THREE.SphereGeometry(1.2, 64, 64);
-          
-          // 写真テクスチャを 3D 球面上に巻き付ける（UV Texture Mapping & 継ぎ目・裂け目防止補正）
+          // 高解像度 3D 球体（SphereGeometry: 96x96 分割でスムーズな変形を実現）
+          const geometry = new THREE.SphereGeometry(1.2, 96, 96);
+
           const texture = new THREE.CanvasTexture(activePhoto);
           texture.wrapS = THREE.ClampToEdgeWrapping;
           texture.wrapT = THREE.ClampToEdgeWrapping;
@@ -920,11 +893,9 @@
           });
 
           const sphereMesh = new THREE.Mesh(geometry, material);
-          // 3D球体テクスチャの回転角度をご指示通り -90度 (-Math.PI / 2) に設定
           sphereMesh.rotation.y = -Math.PI / 2;
           scene.add(sphereMesh);
 
-          // 球体の初期オリジナル頂点座標を保持
           const initialPositions = geometry.attributes.position.array.slice();
 
           canvas._threeRenderer = renderer;
@@ -942,55 +913,44 @@
           canvas._threeTexture.needsUpdate = true;
         }
 
-        // iPhoneタッチ操作に特化した変形（手前X/Y平面上でピンポイントに引き伸ばし・へこませ）
-        // 初期状態（デフォルト）は添付写真1枚通りの綺麗で完全な「まんまる3D球体」
+        // --- 直接タッチドラッグによる頂点変形 ---
+        // canvas._deformPoints は [{x3d, y3d, z3d, dx, dy, dz}] の配列
+        // 各変形ポイントの周囲の頂点をガウス分布で引っ張る
         const geo = canvas._threeGeo;
         const posAttr = geo.attributes.position;
         const posArray = posAttr.array;
         const initPos = canvas._threeInitialPos;
-
-        const angles5 = [
-          -Math.PI / 2,
-          -Math.PI / 2 + (Math.PI * 2 / 5),
-          -Math.PI / 2 + (Math.PI * 4 / 5),
-          -Math.PI / 2 + (Math.PI * 6 / 5),
-          -Math.PI / 2 + (Math.PI * 8 / 5)
-        ];
+        const deformPoints = canvas._deformPoints || [];
 
         for (let i = 0; i < posArray.length; i += 3) {
-          const x = initPos[i];
-          const y = initPos[i + 1];
-          const z = initPos[i + 2];
+          let x = initPos[i];
+          let y = initPos[i + 1];
+          let z = initPos[i + 2];
 
-          // 初期位置のスクリーン平面2D角度（X, Y）
-          const angleXY = Math.atan2(y, x);
+          // 各変形ポイントからの影響を累積
+          for (const dp of deformPoints) {
+            const vdx = x - dp.x3d;
+            const vdy = y - dp.y3d;
+            const vdz = z - dp.z3d;
+            const distSq = vdx * vdx + vdy * vdy + vdz * vdz;
 
-          let offsetX = 0;
-          let offsetY = 0;
+            // ガウス分布の影響半径（sigma）- 大きめに設定するとより有機的なブロブ感
+            const sigma = dp.sigma || 0.45;
+            const sigmaSq = sigma * sigma;
 
-          angles5.forEach((targetAngle, idx) => {
-            const vVal = vibeValues[idx]; // 0.1 ~ 1.0 (デフォルト 0.5)
-            const intensity = (vVal - 0.5) * 2; // -0.8 ~ +1.0
+            // ガウス重み: exp(-dist^2 / (2 * sigma^2))
+            const weight = Math.exp(-distSq / (2 * sigmaSq));
 
-            if (Math.abs(intensity) > 0.02) {
-              let diff = Math.abs(angleXY - targetAngle);
-              if (diff > Math.PI) diff = Math.PI * 2 - diff;
-
-              // iPhoneタッチ引っ張り・へこませ（写真1→写真2のような手前平面での局所的な顔歪み）
-              const pullRadius = 0.7; // タッチ対象範囲
-              if (diff < pullRadius) {
-                const pullWeight = Math.pow(1.0 - diff / pullRadius, 2.0);
-                // 指定方向へピンポイント引っ張り（伸び・へこみ）
-                offsetX += Math.cos(targetAngle) * intensity * pullWeight * 0.45;
-                offsetY += Math.sin(targetAngle) * intensity * pullWeight * 0.45;
-              }
+            if (weight > 0.001) {
+              x += dp.dx * weight;
+              y += dp.dy * weight;
+              z += dp.dz * weight;
             }
-          });
+          }
 
-          // 奥行きZ軸の歪みやスパイクは発生させず、X, Y 平面上で自然かつ有機的に引っ張る
-          posArray[i] = x + offsetX;
-          posArray[i + 1] = y + offsetY;
-          posArray[i + 2] = z; // Z軸は一定で3D球体の質感を保持
+          posArray[i] = x;
+          posArray[i + 1] = y;
+          posArray[i + 2] = z;
         }
 
         posAttr.needsUpdate = true;
@@ -999,7 +959,7 @@
         // 3D レンダリング実行
         canvas._threeRenderer.render(canvas._threeScene, canvas._threeCamera);
 
-        // Rendered WebGL Offscreen Canvas を メイン 2D Canvas の中央にプロジェクション描画
+        // Rendered WebGL Offscreen Canvas をメイン 2D Canvas の中央にプロジェクション描画
         const rSize = radiusMax * 2.3;
         ctx.drawImage(
           canvas._threeRenderer.domElement,
@@ -1249,9 +1209,9 @@
             </div>
           </div>
 
-          <!-- 次へ進むボタン：添付写真のリアル右手指差し手に差し替え -->
+          <!-- 次へ進むボタン：添付写真のリアル右手指差し手（倍サイズ） -->
           <div class="w-full flex justify-center pb-8">
-            <button id="btn-to-burn-step" class="w-16 h-10 hover:scale-105 active:scale-95 transition-all flex items-center justify-center cursor-pointer">
+            <button id="btn-to-burn-step" class="w-32 h-20 hover:scale-105 active:scale-95 transition-all flex items-center justify-center cursor-pointer">
               <img src="images/btn_hand_arrow.png" alt="次へ" class="w-full h-full object-contain" />
             </button>
           </div>
@@ -1700,69 +1660,107 @@
 
       const faceCanvas = document.getElementById('vibe-face-canvas');
       if (faceCanvas && currentStep === 'vibe_check') {
-        let isDraggingVertex = false;
-        let activeKey = null;
+        // 初期状態で変形ポイント配列を用意（まんまる球体）
+        if (!faceCanvas._deformPoints) {
+          faceCanvas._deformPoints = [];
+        }
 
-        const keys = ['anger', 'unfairness', 'void', 'envy', 'sadness'];
-        const angles = [
-          -Math.PI / 2,
-          -Math.PI / 2 + (Math.PI * 2 / 5),
-          -Math.PI / 2 + (Math.PI * 4 / 5),
-          -Math.PI / 2 + (Math.PI * 6 / 5),
-          -Math.PI / 2 + (Math.PI * 8 / 5)
-        ];
+        let isDragging = false;
+        let lastPointerX = 0;
+        let lastPointerY = 0;
+        let dragStartTime = 0;
 
-        const updateVibeFromPointer = (clientX, clientY) => {
+        // 2Dスクリーン座標 → 3D球体表面座標への近似変換
+        const screenTo3D = (clientX, clientY) => {
           const rect = faceCanvas.getBoundingClientRect();
-          const x = (clientX - rect.left) * (faceCanvas.width / rect.width);
-          const y = (clientY - rect.top) * (faceCanvas.height / rect.height);
-          const cx = faceCanvas.width / 2;
-          const cy = faceCanvas.height / 2 - 10;
+          // キャンバス内の正規化座標 (-1 ~ +1)
+          const nx = ((clientX - rect.left) / rect.width) * 2 - 1;
+          const ny = -(((clientY - rect.top) / rect.height) * 2 - 1);
 
-          const dx = x - cx;
-          const dy = y - cy;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          const radiusMax = faceCanvas.width * 0.38;
+          // 球体の表示範囲（画面内でのおおよその球体半径を正規化座標で）
+          const sphereScreenRadius = 0.55;
+          const sx = nx / sphereScreenRadius;
+          const sy = ny / sphereScreenRadius;
+          const r2 = sx * sx + sy * sy;
 
-          let val = Math.round(Math.min(100, Math.max(10, (dist / radiusMax) * 100)));
+          if (r2 > 1.0) return null; // 球体外
 
-          if (!activeKey) {
-            let angle = Math.atan2(dy, dx);
-            let minDiff = Infinity;
-            let closestIdx = 0;
-            angles.forEach((a, i) => {
-              let diff = Math.abs(angle - a);
-              if (diff > Math.PI) diff = Math.PI * 2 - diff;
-              if (diff < minDiff) {
-                minDiff = diff;
-                closestIdx = i;
-              }
-            });
-            activeKey = keys[closestIdx];
-          }
-
-          if (activeKey) {
-            vibes[activeKey] = val;
-            drawPolaApexMeshDistortedFace(faceCanvas, vibes, true, capturedPhotoImg || fallbackUserFaceImg);
-          }
+          // 球体表面上の3D座標（半径1.2の球）
+          const sz = Math.sqrt(1.0 - r2);
+          return {
+            x3d: sx * 1.2,
+            y3d: sy * 1.2,
+            z3d: sz * 1.2
+          };
         };
 
         faceCanvas.onpointerdown = (e) => {
-          isDraggingVertex = true;
-          activeKey = null;
+          e.preventDefault();
+          isDragging = true;
+          lastPointerX = e.clientX;
+          lastPointerY = e.clientY;
+          dragStartTime = Date.now();
           faceCanvas.setPointerCapture(e.pointerId);
-          updateVibeFromPointer(e.clientX, e.clientY);
         };
 
         faceCanvas.onpointermove = (e) => {
-          if (isDraggingVertex) {
-            updateVibeFromPointer(e.clientX, e.clientY);
+          if (!isDragging) return;
+          e.preventDefault();
+
+          const hit = screenTo3D(lastPointerX, lastPointerY);
+          if (!hit) {
+            lastPointerX = e.clientX;
+            lastPointerY = e.clientY;
+            return;
           }
+
+          // ドラッグ方向の差分を3D空間の変位に変換
+          const rect = faceCanvas.getBoundingClientRect();
+          const ddx = (e.clientX - lastPointerX) / rect.width * 2.4;
+          const ddy = -(e.clientY - lastPointerY) / rect.height * 2.4;
+
+          // 一定以上の動きがあればその場に変形ポイントを追加
+          if (Math.abs(ddx) > 0.005 || Math.abs(ddy) > 0.005) {
+            // 近隣の既存変形ポイントがあれば、差分を蓄積（新規追加しすぎない）
+            let merged = false;
+            for (const dp of faceCanvas._deformPoints) {
+              const d = Math.sqrt(
+                (dp.x3d - hit.x3d) ** 2 + (dp.y3d - hit.y3d) ** 2 + (dp.z3d - hit.z3d) ** 2
+              );
+              if (d < 0.25) {
+                dp.dx += ddx * 0.5;
+                dp.dy += ddy * 0.5;
+                merged = true;
+                break;
+              }
+            }
+
+            if (!merged) {
+              faceCanvas._deformPoints.push({
+                x3d: hit.x3d,
+                y3d: hit.y3d,
+                z3d: hit.z3d,
+                dx: ddx * 0.5,
+                dy: ddy * 0.5,
+                dz: 0,
+                sigma: 0.45
+              });
+            }
+
+            // 変形ポイント数の上限（パフォーマンス対策）
+            if (faceCanvas._deformPoints.length > 40) {
+              faceCanvas._deformPoints = faceCanvas._deformPoints.slice(-30);
+            }
+
+            drawPolaApexMeshDistortedFace(faceCanvas, vibes, true, capturedPhotoImg || fallbackUserFaceImg);
+          }
+
+          lastPointerX = e.clientX;
+          lastPointerY = e.clientY;
         };
 
         faceCanvas.onpointerup = (e) => {
-          isDraggingVertex = false;
-          activeKey = null;
+          isDragging = false;
           try { faceCanvas.releasePointerCapture(e.pointerId); } catch(err) {}
         };
       }
