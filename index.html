@@ -101,18 +101,31 @@
       touch-action: none;
     }
 
-    /* 全画面最前面レイヤー：牙（Teeth）フレームオーバーレイ */
-    .app-teeth-frame {
+    /* 全画面最前面レイヤー：上部（アセット 3）＆ 下部（アセット 4）牙フレーム */
+    .app-top-teeth-frame {
       position: fixed;
-      inset: 0;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
       width: 100vw;
-      height: 100vh;
-      background-image: url('images/app_frame.png');
-      background-size: 100% 100%;
-      background-position: center;
-      background-repeat: no-repeat;
+      max-width: 448px;
+      height: auto;
       z-index: 9999;
       pointer-events: none;
+      display: block;
+    }
+
+    .app-bottom-teeth-frame {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100vw;
+      max-width: 448px;
+      height: auto;
+      z-index: 9999;
+      pointer-events: none;
+      display: block;
     }
 
     /* 全画面ジャストフィット用コンテナ */
@@ -322,8 +335,9 @@
 </head>
 <body class="bg-white text-paper-dark min-h-screen flex flex-col antialiased">
 
-  <!-- 全画面最前面レイヤー：牙（Teeth）フレーム -->
-  <div class="app-teeth-frame"></div>
+  <!-- 全画面最前面レイヤー：上部（アセット3）＆ 下部（アセット4）牙フレーム -->
+  <img src="images/top_teeth_frame.png" class="app-top-teeth-frame" alt="Upper Teeth Frame" />
+  <img src="images/bottom_teeth_frame.png" class="app-bottom-teeth-frame" alt="Lower Teeth Frame" />
 
   <canvas id="real-fire-canvas"></canvas>
 
