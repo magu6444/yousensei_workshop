@@ -930,7 +930,7 @@
           // 本物の 3D 球体（SphereGeometry: 64x64 分割）
           const geometry = new THREE.SphereGeometry(1.2, 64, 64);
           
-          // 写真テクスチャを 3D 球面上に巻き付ける（UV Texture Mapping）
+          // 写真テクスチャを 3D 球面上に巻き付ける（UV Texture Mapping & 継ぎ目・裂け目防止補正）
           const texture = new THREE.CanvasTexture(activePhoto);
           texture.wrapS = THREE.ClampToEdgeWrapping;
           texture.wrapT = THREE.ClampToEdgeWrapping;
@@ -938,10 +938,13 @@
           const material = new THREE.MeshPhongMaterial({
             map: texture,
             shininess: 30,
-            specular: 0x444444,
+            specular: 0x333333,
+            side: THREE.FrontSide
           });
 
           const sphereMesh = new THREE.Mesh(geometry, material);
+          // 顔（目・鼻・口）が正真正面に向き、裏側の継ぎ目（裂け目）が底に見えないようY軸180度回転
+          sphereMesh.rotation.y = Math.PI;
           scene.add(sphereMesh);
 
           // 球体の初期オリジナル頂点座標を保持
