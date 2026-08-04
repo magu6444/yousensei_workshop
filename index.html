@@ -330,26 +330,31 @@
     /* クリーン平面ボトムバー */
     .flat-bottom-nav {
       position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      max-width: 448px;
+      bottom: 16px;
+      left: 16px;
+      right: 16px;
+      max-width: 416px;
       margin: 0 auto;
       z-index: 40;
-      background-color: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(12px);
-      border-top: 1px solid #EFF3F4;
-      padding: 8px 24px;
+      background-color: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(239, 243, 244, 0.8);
+      border-radius: 24px;
+      padding: 6px 16px;
       display: flex;
       justify-content: space-around;
       align-items: center;
-      transition: background-color 0.3s ease, border-color 0.3s ease;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+      padding-bottom: calc(6px + env(safe-area-inset-bottom));
     }
 
     /* 白黒反転スタイル（「いま、どんな気分？」画面用） */
     .flat-bottom-nav.inverted-theme {
-      background-color: #111111 !important;
-      border-top: 1px solid #222222 !important;
+      background-color: rgba(15, 20, 25, 0.85) !important;
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     }
 
     /* 2/3ボトムシートモーダル出現・閉じるアニメーション */
@@ -1041,7 +1046,7 @@
       const isNavScreen = (currentStep === 'vibe_check' || currentStep === 'chaos_gallery' || currentStep === 'profile' || currentStep === 'solo_burn');
 
       root.innerHTML = `
-        <main class="flex-1 p-0 flex flex-col justify-start bg-white ${isNavScreen ? 'pb-24' : ''}">
+        <main class="flex-1 p-0 flex flex-col justify-start bg-white ${isNavScreen ? 'pb-28' : ''}">
           ${currentStep === 'vibe_check' ? renderStep1VibeCheck() : ''}
           ${currentStep === 'solo_burn' ? renderStep2SoloBurn() : ''}
           ${currentStep === 'chaos_gallery' ? renderStep3ChaosGallery() : ''}
@@ -1051,23 +1056,56 @@
         ${selectedPostModal ? renderPostDetailModal() : ''}
 
         ${(isNavScreen && !selectedPostModal) ? `
-          <nav class="flat-bottom-nav !bg-[#111111] !border-[#222222] py-2">
-            <button id="nav-chaos" class="flex-1 py-1 flex justify-center items-center transition-all">
-              <div class="${currentStep === 'chaos_gallery' ? 'w-14 h-14 bg-white rounded-full' : 'w-12 h-12 text-zinc-400'} flex items-center justify-center transition-all">
-                <img src="images/nav_chaos.png" alt="掲示板" class="w-10 h-10 object-contain" />
+          <nav class="flat-bottom-nav ${currentStep === 'vibe_check' ? 'inverted-theme' : ''}">
+            <button id="nav-chaos" class="flex-1 flex flex-col justify-center items-center py-1.5 transition-all duration-200 hover:scale-105 active:scale-95">
+              <div class="relative p-2 rounded-xl transition-all duration-300 ${
+                currentStep === 'chaos_gallery' 
+                  ? (currentStep === 'vibe_check' ? 'bg-white/10 text-white' : 'bg-black/5 text-black') 
+                  : (currentStep === 'vibe_check' ? 'text-zinc-500 hover:text-zinc-300' : 'text-zinc-400 hover:text-zinc-600')
+              }">
+                <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+                ${currentStep === 'chaos_gallery' ? `<span class="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 ${currentStep === 'vibe_check' ? 'bg-white' : 'bg-black'} rounded-full"></span>` : ''}
               </div>
+              <span class="text-[9px] font-bold mt-0.5 tracking-wider ${
+                currentStep === 'chaos_gallery' 
+                  ? (currentStep === 'vibe_check' ? 'text-white' : 'text-black') 
+                  : 'text-zinc-400'
+              }">掲示板</span>
             </button>
 
-            <button id="nav-create-burn" class="flex-1 py-1 flex justify-center items-center transition-all">
-              <div class="${currentStep === 'solo_burn' ? 'w-14 h-14 bg-white rounded-full' : 'w-12 h-12 text-zinc-400'} flex items-center justify-center transition-all">
-                <img src="images/nav_burn.png" alt="お焚き上げ" class="w-10 h-10 object-contain" />
+            <button id="nav-create-burn" class="flex-1 flex flex-col justify-center items-center py-1.5 transition-all duration-200 hover:scale-105 active:scale-95">
+              <div class="relative p-2 rounded-xl transition-all duration-300 ${
+                currentStep === 'solo_burn' 
+                  ? 'bg-amber-500/10 text-amber-500' 
+                  : (currentStep === 'vibe_check' ? 'text-zinc-500 hover:text-zinc-300' : 'text-zinc-400 hover:text-zinc-600')
+              }">
+                <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
+                </svg>
+                ${currentStep === 'solo_burn' ? '<span class="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-amber-500 rounded-full"></span>' : ''}
               </div>
+              <span class="text-[9px] font-bold mt-0.5 tracking-wider ${currentStep === 'solo_burn' ? 'text-amber-500' : 'text-zinc-400'}">お焚き上げ</span>
             </button>
 
-            <button id="nav-profile" class="flex-1 py-1 flex justify-center items-center transition-all">
-              <div class="${currentStep === 'profile' ? 'w-14 h-14 bg-white rounded-full' : 'w-12 h-12 text-zinc-400'} flex items-center justify-center transition-all">
-                <img src="images/nav_profile.png" alt="マイページ" class="w-10 h-10 object-contain" />
+            <button id="nav-profile" class="flex-1 flex flex-col justify-center items-center py-1.5 transition-all duration-200 hover:scale-105 active:scale-95">
+              <div class="relative p-2 rounded-xl transition-all duration-300 ${
+                currentStep === 'profile' 
+                  ? (currentStep === 'vibe_check' ? 'bg-white/10 text-white' : 'bg-black/5 text-black') 
+                  : (currentStep === 'vibe_check' ? 'text-zinc-500 hover:text-zinc-300' : 'text-zinc-400 hover:text-zinc-600')
+              }">
+                <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+                ${currentStep === 'profile' ? `<span class="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 ${currentStep === 'vibe_check' ? 'bg-white' : 'bg-black'} rounded-full"></span>` : ''}
               </div>
+              <span class="text-[9px] font-bold mt-0.5 tracking-wider ${
+                currentStep === 'profile' 
+                  ? (currentStep === 'vibe_check' ? 'text-white' : 'text-black') 
+                  : 'text-zinc-400'
+              }">マイページ</span>
             </button>
           </nav>
         ` : ''}
@@ -1267,7 +1305,7 @@
                   return `
                     <button data-tag="${tag}" class="tag-btn px-2.5 py-1 rounded-full border ${
                       isSelected ? 'bg-black text-white border-black' : 'bg-paper text-black border-paper-border'
-                    } transition-colors">${tag}</button>
+                    } transition-all duration-200 hover:scale-105 active:scale-95">${tag}</button>
                   `;
                 }).join('')}
 
@@ -1278,7 +1316,7 @@
                     placeholder="#タグ"
                     class="w-16 px-2 py-0.5 text-xs border border-paper-border rounded-full focus:outline-none focus:border-black font-medium"
                   />
-                  <button id="btn-add-tag" class="px-2 py-0.5 bg-zinc-200 text-black text-xs font-bold rounded-full hover:bg-black hover:text-white transition-colors">
+                  <button id="btn-add-tag" class="px-2 py-0.5 bg-zinc-200 text-black text-xs font-bold rounded-full hover:bg-black hover:text-white transition-all duration-200 hover:scale-110 active:scale-90">
                     +
                   </button>
                 </div>
@@ -1305,7 +1343,7 @@
         <div class="flex-1 flex flex-col fade-in bg-white min-h-screen pt-24">
           <div class="divide-y divide-paper-border">
             ${posts.map((post) => `
-              <div id="card-item-${post.id}" data-postid="${post.id}" class="x-post-card post-item-card flex gap-3.5 relative overflow-hidden">
+              <div id="card-item-${post.id}" data-postid="${post.id}" class="x-post-card post-item-card flex gap-3.5 p-4 relative overflow-hidden hover:bg-zinc-50/60 transition-colors cursor-pointer">
                 <div id="enjo-flame-overlay-${post.id}" class="absolute inset-0 bg-gradient-to-t from-red-600/35 via-amber-500/20 to-transparent pointer-events-none opacity-0 transition-opacity duration-300">
                   <div class="card-rising-flames">
                     <span class="rising-flame-icon">🔥</span>
@@ -1342,12 +1380,12 @@
                     </div>
 
                     <div class="flex items-center gap-4 text-zinc-500 text-xs flex-shrink-0">
-                      <div class="flex items-center gap-1 hover:text-black transition-colors cursor-pointer">
+                      <div class="flex items-center gap-1 hover:text-black transition-all hover:scale-105 active:scale-95 cursor-pointer">
                         <span class="text-xs">💬</span>
                         <span class="text-xs font-mono font-bold text-zinc-700">${post.replies ? post.replies.length : 0}</span>
                       </div>
 
-                      <button data-postid="${post.id}" class="btn-gassho flex items-center gap-1 hover:text-amber-600 transition-colors">
+                      <button data-postid="${post.id}" class="btn-gassho flex items-center gap-1 hover:text-amber-600 transition-all hover:scale-110 active:scale-90">
                         <span class="text-xs">🙏</span>
                         <span id="gassho-count-${post.id}" class="text-xs font-bold text-black">${post.gasshoCount}</span>
                       </button>
@@ -1455,7 +1493,7 @@
 
           <!-- 再設定ボタン（卵形や顔と被らないよう、完全に下部に配置） -->
           <div class="w-full flex justify-center mt-auto pb-4">
-            <button id="btn-recreate-vibe" class="px-10 py-3.5 bg-black text-white text-xs font-bold rounded-full hover:bg-zinc-700 active:scale-95 transition-all shadow-md">
+            <button id="btn-recreate-vibe" class="px-10 py-3.5 bg-black text-white text-xs font-bold rounded-full hover:bg-zinc-700 hover:scale-105 active:scale-95 transition-all shadow-md">
               ${t.btnRecreateVibe}
             </button>
           </div>
