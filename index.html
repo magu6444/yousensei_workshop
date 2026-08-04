@@ -57,7 +57,7 @@
       touch-action: none;
     }
 
-    /* 全画面ジャストフィット用コンテナ */
+    /* 全画面ジャストフィット用コンテナ（下余白pb-16は付与しないため全画面にジャスト配置） */
     .screen-container {
       display: flex;
       flex-direction: column;
@@ -203,13 +203,21 @@
       background-color: #111111;
     }
 
-    /* 2/3ボトムシートモーダルアニメーション */
+    /* 2/3ボトムシートモーダル出現・閉じるアニメーション */
     .bottom-sheet-slide-up {
-      animation: bottomSheetUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      animation: bottomSheetUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
     @keyframes bottomSheetUp {
       from { transform: translateY(100%); }
       to { transform: translateY(0); }
+    }
+
+    .bottom-sheet-slide-down {
+      animation: bottomSheetDown 0.25s cubic-bezier(0.4, 0, 1, 1) forwards;
+    }
+    @keyframes bottomSheetDown {
+      from { transform: translateY(0); }
+      to { transform: translateY(100%); }
     }
 
     .fade-in {
@@ -477,7 +485,6 @@
       { name: '激辛ウォッチ民', handle: '@gekikara_sub' }
     ];
 
-    // 高精度・多角的な共感＆炎上レス自動生成エンジン
     function generateContextualSympatheticEnjoReplies(userText) {
       const lower = userText.toLowerCase();
       const isWork = lower.includes('上司') || lower.includes('仕事') || lower.includes('会社') || lower.includes('残業') || lower.includes('営業') || lower.includes('コード') || lower.includes('チャット') || lower.includes('労基');
@@ -516,7 +523,7 @@
       }
 
       let result = [];
-      const count = Math.floor(Math.random() * 3) + 5; // 5〜7件の豊富なレス生成
+      const count = Math.floor(Math.random() * 3) + 5;
       const shuffledUsers = [...viralUserNames].sort(() => 0.5 - Math.random());
       for (let i = 0; i < count; i++) {
         const u = shuffledUsers[i % shuffledUsers.length];
@@ -620,7 +627,7 @@
       ashWeight: '1.4kg'
     };
 
-    // --- 【重要修正】顔切り抜き写真をキャンバス最前面にレイヤー配置 ＆ 同心5角形ガイド線を背景へ ---
+    // --- 顔切り抜き写真（最前面）＆同心5角形ガイド線（背景） ---
     function drawPolaApexMeshDistortedFace(canvas, vibesData, showMetrics = true, customPhotoImg = null) {
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
@@ -656,7 +663,7 @@
         return { x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r };
       });
 
-      // レイヤー1（最下層）：同心5角形ガイド線
+      // 背景ガイド線
       ctx.strokeStyle = '#EBEBEF';
       ctx.lineWidth = 1;
       [0.25, 0.5, 0.75, 1.0].forEach(rScale => {
@@ -679,7 +686,7 @@
         ctx.stroke();
       });
 
-      // レイヤー2（最前面）：顔の切り抜き写真テクスチャを100%くっきり重ね描画！
+      // 最前面：顔写真
       const activePhoto = customPhotoImg || capturedPhotoImg || fallbackUserFaceImg;
       if (activePhoto && activePhoto.complete) {
         const srcW = activePhoto.width || 300;
@@ -774,8 +781,11 @@
         return;
       }
 
+      // タイムラインとマイページのみ下部ナビがあるためpb-16、その他画面はpb-0で完全1画面全高キープ！
+      const isNavScreen = (currentStep === 'chaos_gallery' || currentStep === 'profile');
+
       root.innerHTML = `
-        <main class="flex-1 p-0 flex flex-col justify-start bg-white pb-16">
+        <main class="flex-1 p-0 flex flex-col justify-start bg-white ${isNavScreen ? 'pb-16' : ''}">
           ${currentStep === 'vibe_check' ? renderStep1VibeCheck() : ''}
           ${currentStep === 'solo_burn' ? renderStep2SoloBurn() : ''}
           ${currentStep === 'chaos_gallery' ? renderStep3ChaosGallery() : ''}
@@ -784,8 +794,8 @@
 
         ${selectedPostModal ? renderPostDetailModal() : ''}
 
-        <!-- 洗練されたボトムナビゲーションバー（📋 タイムライン / 👤 マイページ） -->
-        ${((currentStep === 'chaos_gallery' || currentStep === 'profile') && !selectedPostModal) ? `
+        <!-- 洗練されたボトムナビゲーションバー（タイムライン / マイページ画面のみ表示） -->
+        ${(isNavScreen && !selectedPostModal) ? `
           <nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto z-40 bg-white/95 backdrop-blur-md border-t border-paper-border py-2 px-6 flex justify-around items-center">
             <button id="nav-chaos" class="flex flex-col items-center gap-1 ${currentStep === 'chaos_gallery' ? 'text-black' : 'text-zinc-400'} hover:text-black transition-colors">
               <span class="text-xl">📋</span>
@@ -1016,7 +1026,7 @@
       `;
     }
 
-    // --- STEP 3: タイムライン（「みんなのお焚き上げ」タイトル＆ヘッダー線を削除して究極クリーン化） ---
+    // --- STEP 3: タイムライン ---
     function renderStep3ChaosGallery() {
       const t = i18n[currentLang];
       return `
@@ -1068,21 +1078,21 @@
       `;
     }
 
-    // --- 【スワイプ対応・画面2/3ストップ・固定元投稿＆無制限スクロールリプライ・下スワイプ閉じモーダル】 ---
+    // --- 投稿詳細モーダル（2/3ボトムシート） ---
     function renderPostDetailModal() {
       const p = selectedPostModal;
       return `
         <div id="modal-backdrop" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex justify-center items-end fade-in">
           <div id="modal-sheet" class="bg-white w-full max-w-md h-[68vh] rounded-t-3xl shadow-2xl flex flex-col justify-between overflow-hidden bottom-sheet-slide-up transition-transform duration-200">
             
-            <!-- スワイプインジケータ（下スワイプで閉じるジェスチャー対応） -->
-            <div id="modal-drag-handle" class="w-full py-2.5 flex justify-center items-center cursor-grab active:cursor-grabbing flex-shrink-0 bg-white border-b border-zinc-100">
-              <div class="w-12 h-1.5 bg-zinc-300 rounded-full"></div>
+            <!-- 灰色のバー（タップ時＆スワイプ時に下へシュッと閉じる） -->
+            <div id="modal-drag-handle" class="w-full py-3.5 flex justify-center items-center cursor-pointer active:opacity-70 flex-shrink-0 bg-white border-b border-zinc-100">
+              <div class="w-12 h-1.5 bg-zinc-300 rounded-full hover:bg-zinc-400 transition-colors"></div>
             </div>
 
             <div class="flex-1 flex flex-col min-h-0 bg-white">
               
-              <!-- 固定エリア：元の投稿カード（スクロールしても上部に固定表示） -->
+              <!-- 固定エリア：元の投稿カード -->
               <div class="p-4 bg-zinc-50 border-b border-zinc-200 flex-shrink-0">
                 <div class="flex gap-3">
                   <div class="w-10 h-10 rounded-full border border-paper-border overflow-hidden bg-white p-0.5 flex-shrink-0">
@@ -1114,7 +1124,7 @@
 
             </div>
 
-            <!-- 固定エリア：返信入力フォーム（最下部に固定） -->
+            <!-- 固定エリア：返信入力フォーム -->
             <div class="p-3 border-t border-paper-border flex-shrink-0 flex items-center gap-2 bg-white sticky bottom-0">
               <input
                 type="text"
@@ -1207,7 +1217,23 @@
       }, 1100);
     }
 
-    // --- イベントリスナー ＆ 下スワイプジェスチャー制御 ---
+    // モーダルをシュッと閉じる共通処理
+    function closeModalWithAnimation() {
+      const modalSheet = document.getElementById('modal-sheet');
+      if (modalSheet) {
+        modalSheet.classList.remove('bottom-sheet-slide-up');
+        modalSheet.classList.add('bottom-sheet-slide-down');
+        setTimeout(() => {
+          selectedPostModal = null;
+          renderApp();
+        }, 220);
+      } else {
+        selectedPostModal = null;
+        renderApp();
+      }
+    }
+
+    // --- イベントリスナー ＆ 灰色のバータップ・スワイプ閉じ処理 ---
     function setupEventListeners() {
       const btnJp = document.getElementById('lang-btn-jp');
       if (btnJp) {
@@ -1397,42 +1423,50 @@
         };
       });
 
-      // --- 下スワイプでボトムシートモーダルを閉じるジェスチャー実装 ---
+      // --- 灰色のバーをタッチするだけで下にシュッと戻って閉じる処理 ＆ 下スワイプ対応 ---
       const modalSheet = document.getElementById('modal-sheet');
       const modalBackdrop = document.getElementById('modal-backdrop');
       const dragHandle = document.getElementById('modal-drag-handle');
 
       if (modalSheet && dragHandle) {
         let sheetTouchStartY = 0;
-        let currentTranslateY = 0;
+        let isDragging = false;
 
+        // タッチクリック（タップ）で即座にシュッと閉じる
+        dragHandle.onclick = () => {
+          soundEngine.playSubtleClick();
+          closeModalWithAnimation();
+        };
+
+        // スワイプ操作対応
         dragHandle.ontouchstart = (e) => {
           sheetTouchStartY = e.touches[0].clientY;
+          isDragging = true;
         };
 
         dragHandle.ontouchmove = (e) => {
+          if (!isDragging) return;
           const currentY = e.touches[0].clientY;
           const diffY = currentY - sheetTouchStartY;
           if (diffY > 0) {
-            currentTranslateY = diffY;
             modalSheet.style.transform = `translateY(${diffY}px)`;
           }
         };
 
-        dragHandle.ontouchend = () => {
-          if (currentTranslateY > 80) {
-            selectedPostModal = null;
-            renderApp();
+        dragHandle.ontouchend = (e) => {
+          isDragging = false;
+          const currentY = e.changedTouches[0].clientY;
+          const diffY = currentY - sheetTouchStartY;
+          if (diffY > 40) {
+            closeModalWithAnimation();
           } else {
             modalSheet.style.transform = 'translateY(0)';
           }
-          currentTranslateY = 0;
         };
 
         modalBackdrop.onclick = (e) => {
           if (e.target === modalBackdrop) {
-            selectedPostModal = null;
-            renderApp();
+            closeModalWithAnimation();
           }
         };
       }
