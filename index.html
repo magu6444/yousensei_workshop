@@ -167,14 +167,14 @@
       overflow: hidden;
     }
 
-    /* ポスタータイトルの縦列ピタリ整列 ＆ さらに半分詰めた超密着行間・字間（💥タイム基準） */
+    /* ポスタータイトルの縦列ピタリ整列 ＆ 行間ゆったり・文字間密着（中央配置） */
     .poster-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      row-gap: -8px;
-      column-gap: -4px;
+      row-gap: 0.6rem;
+      column-gap: -2px;
       width: 100%;
-      max-width: 250px;
+      max-width: 230px;
       margin: 0 auto;
     }
 
@@ -182,7 +182,8 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      height: 48px;
+      height: auto;
+      aspect-ratio: 1;
     }
 
     .poster-char {
