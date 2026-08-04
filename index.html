@@ -52,13 +52,11 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* 掲示板（タイムライン）以外は縦スクロール禁止 */
     body.no-scroll {
       overflow-y: hidden;
       touch-action: none;
     }
 
-    /* 全画面ジャストフィット用コンテナ */
     .screen-container {
       display: flex;
       flex-direction: column;
@@ -71,7 +69,6 @@
       overflow: hidden;
     }
 
-    /* ポスタータイトルの縦列ピタリ整列 ＆ ゆったり行間スペース */
     .poster-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -119,7 +116,6 @@
       }
     }
 
-    /* カスタムスライダー */
     input[type=range] {
       -webkit-appearance: none;
       background: #EBEBEF;
@@ -135,7 +131,6 @@
       cursor: pointer;
     }
 
-    /* --- 本格リアル火炎パーティクル Canvas オーバーレイ --- */
     #real-fire-canvas {
       position: fixed;
       inset: 0;
@@ -158,19 +153,17 @@
       100% { opacity: 0; }
     }
 
-    /* --- カードスタック：間隔を極限までゆったり広げた超見やすい構造 --- */
+    /* --- 無限縦スクロール対応スタックコンテナ --- */
     .stack-container {
       position: relative;
       width: 100%;
       max-width: 360px;
       margin: 0 auto;
-      min-height: 680px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-start;
-      padding-top: 0.5rem;
-      padding-bottom: 6rem;
+      padding-top: 1rem;
+      padding-bottom: 7rem;
     }
 
     .newspaper-stack-card {
@@ -181,6 +174,7 @@
       border-radius: 16px;
       padding: 18px 20px;
       box-shadow: 0 10px 24px -4px rgba(0, 0, 0, 0.06), 0 4px 10px -4px rgba(0, 0, 0, 0.03);
+      /* スプリング慣性イージング */
       transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.45s ease, box-shadow 0.4s ease;
       cursor: pointer;
       user-select: none;
@@ -191,29 +185,44 @@
       box-shadow: 0 18px 32px -8px rgba(0, 0, 0, 0.12);
     }
 
-    /* 物理スプリング散開アニメーション状態クラス */
-    .newspaper-stack-card.slide-out-top {
-      transform: translateY(-90vh) rotate(-15deg) scale(0.7) !important;
+    /* 上下のカードが「左右へダイナミックにはける」アニメーション状態 */
+    .newspaper-stack-card.slide-out-left {
+      transform: translateX(-120vw) rotate(-25deg) scale(0.7) !important;
       opacity: 0;
       pointer-events: none;
     }
 
-    .newspaper-stack-card.slide-out-bottom {
-      transform: translateY(90vh) rotate(15deg) scale(0.7) !important;
+    .newspaper-stack-card.slide-out-right {
+      transform: translateX(120vw) rotate(25deg) scale(0.7) !important;
       opacity: 0;
       pointer-events: none;
     }
 
-    /* タップ時の画面真中央フォーカス拡大 */
+    /* タップされたカードが画面中央にフォーカス表示 */
     .newspaper-stack-card.expanded-center {
-      top: 50% !important;
+      position: fixed !important;
+      top: 48% !important;
       left: 50% !important;
-      transform: translate(-50%, -60%) rotate(0deg) scale(1.08) !important;
+      transform: translate(-50%, -50%) rotate(0deg) scale(1.08) !important;
       z-index: 200 !important;
-      box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.3) !important;
+      box-shadow: 0 35px 70px -15px rgba(0, 0, 0, 0.35) !important;
     }
 
-    /* モードチェンジボタン */
+    /* バックドロップオーバーレイ（カード以外タップでスタック列へ復帰） */
+    #stack-focus-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 150;
+      background: rgba(0, 0, 0, 0.25);
+      backdrop-filter: blur(2px);
+      display: none;
+    }
+
+    #stack-focus-backdrop.active {
+      display: block;
+      animation: fadeIn 0.25s ease forwards;
+    }
+
     .view-mode-toggle {
       position: fixed;
       top: max(12px, env(safe-area-inset-top));
@@ -233,7 +242,6 @@
       cursor: pointer;
     }
 
-    /* 洗練された平面ボトムバー */
     .flat-bottom-nav {
       position: fixed;
       bottom: 0;
@@ -251,7 +259,6 @@
       align-items: center;
     }
 
-    /* 2/3ボトムシートモーダル出現・閉じるアニメーション */
     .bottom-sheet-slide-up {
       animation: bottomSheetUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
@@ -291,17 +298,17 @@
 </head>
 <body class="bg-white text-paper-dark min-h-screen flex flex-col antialiased">
 
-  <!-- 本格リアルな炎パーティクル描画用 Canvas -->
   <canvas id="real-fire-canvas"></canvas>
+
+  <!-- カードフォーカス時に背景タップでスタック復帰するバックドロップ -->
+  <div id="stack-focus-backdrop"></div>
 
   <div id="app-root" class="flex-1 flex flex-col min-h-screen relative w-full max-w-md mx-auto bg-white"></div>
 
-  <!-- 非表示Webカメラ映像エレメント＆キャプチャCanvas -->
   <video id="webcam-video" autoplay playsinline class="hidden"></video>
   <canvas id="captured-photo-canvas" class="hidden"></canvas>
 
   <script>
-    // --- サウンドエンジン ---
     const soundEngine = {
       playAudio(src) {
         try {
@@ -337,7 +344,6 @@
       }
     };
 
-    // --- カメラ・自撮りテクスチャ ＆ 顔面ドアップ・5角形モザイク切り抜きプロセス ---
     let capturedPhotoImg = null;
 
     function createDefaultFaceTexture() {
@@ -472,7 +478,6 @@
       };
     }
 
-    // --- 多言語辞書 (JP / EN) ---
     let currentLang = 'JP';
 
     const i18n = {
@@ -492,7 +497,7 @@
         hashtagLabel: 'ハッシュタグ',
         chaosTitle: 'みんなのお焚き上げ',
         passportTag: 'PASSPORT',
-        burnedCountLabel: 'お焚き上げ数',
+        burnedCountLabel: '浄化指数', // 「浄化された数」から名称変更
         gasshoSentLabel: '送った合掌',
         purifiedAshLabel: '浄化された灰',
         btnRecreateVibe: '感情を再設定する',
@@ -513,7 +518,7 @@
         hashtagLabel: 'Hashtags',
         chaosTitle: 'Public Archives',
         passportTag: 'PASSPORT',
-        burnedCountLabel: 'Purified',
+        burnedCountLabel: 'Purify Index',
         gasshoSentLabel: 'Gassho Sent',
         purifiedAshLabel: 'Purified Ash',
         btnRecreateVibe: 'Reconfig Vibe',
@@ -599,6 +604,7 @@
     let categoryTags = ['#仕事', '#人間関係', '#恋愛', '#自分', '#理不尽', '#社会'];
     let selectedTags = ['#仕事'];
 
+    // 豊富な初期投稿データ（スタック無限スクロール用）
     let posts = [
       {
         id: 'post-1',
@@ -654,18 +660,54 @@
         gasshoCount: 421,
         tag: '#仕事 #理不尽',
         replies: generateContextualSympatheticEnjoReplies('定時退社する時に「もう帰るの？」って言ってくる先輩。契約時間終わってんだから帰るに決まってんだろ。')
+      },
+      {
+        id: 'post-6',
+        userName: '社会の底辺から',
+        userId: '@sub_account_99',
+        dateStr: '3時間前',
+        text: '満員電車で背負いリュックを前に持ち替えない奴、人の顔にバッグが当たってることに気づけ。',
+        authorVibe: { anger: 80, sadness: 20, unfairness: 90, envy: 10, void: 40 },
+        gasshoCount: 198,
+        tag: '#社会 #理不尽',
+        replies: generateContextualSympatheticEnjoReplies('満員電車で背負いリュックを前に持ち替えない奴、人の顔にバッグが当たってることに気づけ。')
+      },
+      {
+        id: 'post-7',
+        userName: '知恵袋回答者A',
+        userId: '@chiebukuro_master',
+        dateStr: '4時間前',
+        text: '「アドバイスちょうだい」って言われて真剣に答えたのに「でも〜だから」って全部否定してくる奴、二度と相談してくるな。',
+        authorVibe: { anger: 90, sadness: 30, unfairness: 95, envy: 15, void: 50 },
+        gasshoCount: 367,
+        tag: '#人間関係 #自分',
+        replies: generateContextualSympatheticEnjoReplies('「アドバイスちょうだい」って言われて真剣に答えたのに「でも〜だから」って全部否定してくる奴、二度と相談してくるな。')
+      },
+      {
+        id: 'post-8',
+        userName: '物申すマン',
+        userId: '@monomosu_man_08',
+        dateStr: '5時間前',
+        text: '飲食店の店員にタメ口で横柄な態度取る奴、人としてマジで引くわ。一生一人で外食してくれ。',
+        authorVibe: { anger: 88, sadness: 15, unfairness: 92, envy: 10, void: 20 },
+        gasshoCount: 489,
+        tag: '#社会 #人間関係',
+        replies: generateContextualSympatheticEnjoReplies('飲食店の店員にタメ口で横柄な態度取る奴、人としてマジで引くわ。一生一人で外食してくれ。')
       }
     ];
 
-    let postIndexCount = 6;
+    let postIndexCount = 9;
     const pastRantSamples = [
       '店員さんに横柄な態度取る人とデートした。一瞬で冷めてその場で会計別々にして帰ってきた。',
       'グループLINEで私以外で遊びに行った写真流れてきた時の、心臓がシュッて冷たくなる感覚。',
-      '「残業するのが偉い」風潮の残る職場、定時退社する私を見る目線が冷たすぎて草も生えない。'
+      '「残業するのが偉い」風潮の残る職場、定時退社する私を見る目線が冷たすぎて草も生えない。',
+      '「最近の若い子は根性がない」って言ってる上司、根性論でしかマネジメントできない自分の無能さを露呈してるだけ。',
+      'SNSの裏アカウントで職場の愚痴書いてたら同僚に特定されて気まずい空気が流れてる。'
     ];
 
+    // 無限スクロール用追加データ自動生成
     function generateMorePosts() {
-      for (let i = 0; i < 2; i++) {
+      for (let i = 0; i < 3; i++) {
         const sampleText = pastRantSamples[Math.floor(Math.random() * pastRantSamples.length)];
         const tags = ['#仕事', '#人間関係', '#自分', '#社会', '#恋愛'];
         const tag1 = tags[Math.floor(Math.random() * tags.length)];
@@ -848,7 +890,6 @@
         return;
       }
 
-      // 画面下部に常にボトムメニューバーを表示する対象画面
       const isNavScreen = (currentStep === 'chaos_gallery' || currentStep === 'profile' || currentStep === 'solo_burn');
 
       root.innerHTML = `
@@ -861,7 +902,6 @@
 
         ${selectedPostModal ? renderPostDetailModal() : ''}
 
-        <!-- ページ下部に固定されるボトムナビバー -->
         ${(isNavScreen && !selectedPostModal) ? `
           <nav class="flat-bottom-nav">
             <button id="nav-chaos" class="flex-1 py-1 flex justify-center items-center ${currentStep === 'chaos_gallery' ? 'text-black font-bold' : 'text-zinc-400'} hover:text-black transition-colors">
@@ -904,6 +944,14 @@
             drawPolaApexMeshDistortedFace(cardCanvas, post.authorVibe, false, post.customPhoto);
           }
         });
+
+        // スタック表示時・リスト表示時両方で無限縦スクロールイベント
+        window.onscroll = () => {
+          if (!selectedPostModal && !expandedCardId && (window.innerHeight + window.scrollY) >= document.body.offsetHeight - 400) {
+            generateMorePosts();
+            renderApp();
+          }
+        };
       } else if (currentStep === 'profile') {
         const profileCanvas = document.getElementById('profile-face-canvas');
         if (profileCanvas) {
@@ -1025,7 +1073,7 @@
       `;
     }
 
-    // --- STEP 2: 焚き上げ入力画面（タイトル＆サブテキスト完全撤去・ボトムバー常駐） ---
+    // --- STEP 2: 焚き上げ入力画面 ---
     function renderStep2SoloBurn() {
       const t = i18n[currentLang];
       return `
@@ -1083,13 +1131,16 @@
       `;
     }
 
-    // --- STEP 3: タイムライン（超広々間隔スタック） ---
+    // --- STEP 3: タイムライン（永遠スタック無限スクロール ＆ 左右へはけるダイナミックアニメーション） ---
     function renderStep3ChaosGallery() {
       const t = i18n[currentLang];
 
       if (timelineViewMode === 'stack') {
+        // スタックコンテナの高さを全全投稿数に応じて超余裕で確保（無限スクロール可能）
+        const stackHeight = Math.max(680, posts.length * 110 + 120);
+
         return `
-          <div class="flex-1 flex flex-col items-center justify-center fade-in bg-white min-h-screen relative overflow-hidden">
+          <div class="flex-1 flex flex-col items-center justify-start fade-in bg-white min-h-screen relative overflow-x-hidden">
             
             <button id="btn-toggle-viewmode" class="view-mode-toggle">
               <span>📄 リスト表示に切替</span>
@@ -1099,17 +1150,13 @@
               <span class="text-[10px] font-mono text-zinc-400 uppercase tracking-widest">TAP TO FOCUS / TAP AGAIN FOR DETAILS</span>
             </div>
 
-            <div class="stack-container">
-              ${posts.slice(0, 5).map((post, idx) => {
-                // 超ゆったり広い間隔（105px間隔）でスタック化
-                const offsets = [
-                  { top: 10, rot: -2, z: 50 },
-                  { top: 115, rot: 2.5, z: 40 },
-                  { top: 220, rot: -3, z: 30 },
-                  { top: 325, rot: 2, z: 20 },
-                  { top: 430, rot: -2.5, z: 10 }
-                ];
-                const off = offsets[idx % offsets.length];
+            <!-- 無限スクロールスタックコンテナ -->
+            <div class="stack-container" style="min-height: ${stackHeight}px;">
+              ${posts.map((post, idx) => {
+                // 110px間隔で永遠にスタック配置
+                const topPos = 10 + idx * 110;
+                const rot = (idx % 2 === 0 ? -1 : 1) * (2 + (idx % 3));
+                const zIndex = posts.length - idx;
 
                 return `
                   <div
@@ -1117,7 +1164,7 @@
                     data-postid="${post.id}"
                     data-idx="${idx}"
                     class="newspaper-stack-card stack-post-card"
-                    style="top: ${off.top}px; transform: rotate(${off.rot}deg); z-index: ${off.z};"
+                    style="top: ${topPos}px; transform: rotate(${rot}deg); z-index: ${zIndex};"
                   >
                     <div class="flex justify-between items-center pb-2 border-b border-zinc-200 mb-2.5 text-[10px] font-bold text-zinc-500">
                       <span class="uppercase tracking-wider font-bold">DAILY OTAKIAGE PAPER</span>
@@ -1274,7 +1321,7 @@
       `;
     }
 
-    // --- 感情パスポート ---
+    // --- 感情パスポート（「浄化された数」⇒「浄化指数」へ変更） ---
     function renderProfileView() {
       const t = i18n[currentLang];
       return `
@@ -1319,7 +1366,7 @@
       `;
     }
 
-    // --- 【物理演算・粒子生成】本格的なリアル火炎物理シミュレーション演出 ---
+    // --- 本格リアル火炎物理シミュレーション ---
     function triggerRealFireBurnSimulation(onComplete) {
       const canvas = document.getElementById('real-fire-canvas');
       if (!canvas) {
@@ -1337,7 +1384,6 @@
       let particles = [];
       const particleCount = 180;
 
-      // リアルな火炎粒子オブジェクト生成
       for (let i = 0; i < particleCount; i++) {
         particles.push({
           x: Math.random() * canvas.width,
@@ -1347,7 +1393,7 @@
           size: Math.random() * 30 + 15,
           life: Math.random() * 0.8 + 0.5,
           maxLife: 1.2,
-          hue: Math.random() * 40 // 0(赤)〜40(黄金・黄)
+          hue: Math.random() * 40
         });
       }
 
@@ -1358,7 +1404,6 @@
         const elapsed = (now - startTime) / 1000;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // 炎の熱気グラデーション
         ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -1420,9 +1465,11 @@
 
     function resetStackCardsPosition() {
       document.querySelectorAll('.newspaper-stack-card').forEach(card => {
-        card.classList.remove('slide-out-top', 'slide-out-bottom', 'expanded-center');
+        card.classList.remove('slide-out-left', 'slide-out-right', 'expanded-center');
       });
       expandedCardId = null;
+      const backdrop = document.getElementById('stack-focus-backdrop');
+      if (backdrop) backdrop.classList.remove('active');
     }
 
     // --- イベントリスナー ---
@@ -1545,12 +1592,15 @@
         };
       }
 
+      // --- 【新アニメーション＆操作系】上下のカードが「左右」にはけ、バックドロップタップでスタック列へ復帰 ---
       document.querySelectorAll('.stack-post-card').forEach(card => {
         card.onclick = (e) => {
+          e.stopPropagation();
           soundEngine.playSubtleClick();
           const targetId = card.dataset.postid;
           const targetIdx = parseInt(card.dataset.idx, 10);
 
+          // すでにフォーカス表示中なら、再タップでお焚き上げ内容詳細モーダルをオープン
           if (expandedCardId === targetId) {
             const post = posts.find(p => p.id === targetId);
             if (post) {
@@ -1560,24 +1610,37 @@
             return;
           }
 
+          // 1回目のタップ：タップされたカードが画面中央へポップアップ ＋ 上下カードが交互に「左右」にはける
           expandedCardId = targetId;
+
+          const backdrop = document.getElementById('stack-focus-backdrop');
+          if (backdrop) backdrop.classList.add('active');
 
           const allCards = document.querySelectorAll('.stack-post-card');
           allCards.forEach(c => {
             const idx = parseInt(c.dataset.idx, 10);
             if (idx < targetIdx) {
-              c.classList.remove('expanded-center');
-              c.classList.add('slide-out-top');
+              c.classList.remove('expanded-center', 'slide-out-right');
+              c.classList.add(idx % 2 === 0 ? 'slide-out-left' : 'slide-out-right');
             } else if (idx > targetIdx) {
-              c.classList.remove('expanded-center');
-              c.classList.add('slide-out-bottom');
+              c.classList.remove('expanded-center', 'slide-out-left');
+              c.classList.add(idx % 2 === 0 ? 'slide-out-right' : 'slide-out-left');
             } else {
-              c.classList.remove('slide-out-top', 'slide-out-bottom');
+              c.classList.remove('slide-out-left', 'slide-out-right');
               c.classList.add('expanded-center');
             }
           });
         };
       });
+
+      // カード以外のバックドロップタップで、スタック列へスムーズ復帰
+      const focusBackdrop = document.getElementById('stack-focus-backdrop');
+      if (focusBackdrop) {
+        focusBackdrop.onclick = () => {
+          soundEngine.playSubtleClick();
+          resetStackCardsPosition();
+        };
+      }
 
       const toggleViewBtn = document.getElementById('btn-toggle-viewmode');
       if (toggleViewBtn) {
