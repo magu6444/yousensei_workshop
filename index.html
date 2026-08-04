@@ -943,8 +943,8 @@
           });
 
           const sphereMesh = new THREE.Mesh(geometry, material);
-          // 顔（目・鼻・口）が正真正面に向き、裏側の継ぎ目（裂け目）が底に見えないようY軸180度回転
-          sphereMesh.rotation.y = Math.PI;
+          // 顔（目・鼻・口）が正真正面に向き、3D球体として自然に立体視できるようY軸90度（Math.PI / 2）回転補正
+          sphereMesh.rotation.y = Math.PI / 2;
           scene.add(sphereMesh);
 
           // 球体の初期オリジナル頂点座標を保持
@@ -1212,7 +1212,7 @@
               <div class="poster-cell"><span class="poster-char">${t.posterLine4[3]}</span></div>
             </div>
 
-          <div id="btn-start-app" class="w-full flex justify-center pb-6 cursor-pointer">
+          <div id="btn-start-app" class="w-full flex justify-center pb-2 cursor-pointer">
             <span class="tap-entry-text text-[11px] font-bold tracking-[0.25em] text-zinc-400 uppercase">
               TAP ENTRY
             </span>
@@ -1226,23 +1226,23 @@
     function renderStep1VibeCheck() {
       const t = i18n[currentLang];
       return `
-        <div class="screen-container bg-white fade-in select-none">
-          <div class="text-center pt-2 mb-1">
+        <div class="screen-container bg-white fade-in select-none" style="padding-top: max(2.2rem, calc(env(safe-area-inset-top) + 1.5rem));">
+          <div class="text-center pt-0 mb-0">
             <h2 class="text-2xl font-black tracking-tight text-black">
               ${t.step1Title}
             </h2>
-            <p class="text-[12px] font-bold text-zinc-400 mt-1 lowercase tracking-wider">
+            <p class="text-[12px] font-bold text-zinc-400 mt-0.5 lowercase tracking-wider">
               touch & drug
             </p>
           </div>
 
-          <!-- スライド式 顔パラメータ切り替えエリア (左右三角マーク ◀ ▶ & 5個の丸ドット) -->
+          <!-- スライド式 顔パラメータ切り替えエリア (左右黒三角マーク ▲ ▼ ◀ ▶ & 5個の丸ドット) -->
           <div class="w-full flex-1 flex flex-col items-center justify-center relative my-auto">
             <div class="w-full max-w-[350px] flex items-center justify-between relative px-0">
               
-              <!-- 左三角ナビマーク -->
-              <button id="face-prev-arrow" class="w-7 h-7 flex items-center justify-center text-black hover:scale-110 active:scale-90 transition-all z-10 cursor-pointer">
-                <span class="text-xs font-black">◀</span>
+              <!-- 左黒三角ナビマーク -->
+              <button id="face-prev-arrow" class="w-8 h-8 flex items-center justify-center text-black hover:scale-110 active:scale-90 transition-all z-10 cursor-pointer">
+                <span class="text-sm font-black">◀</span>
               </button>
 
               <!-- 中央：五角形パラメータ Canvas -->
@@ -1250,9 +1250,9 @@
                 <canvas id="vibe-face-canvas" class="block w-full h-full cursor-grab active:cursor-grabbing touch-none"></canvas>
               </div>
 
-              <!-- 右三角ナビマーク -->
-              <button id="face-next-arrow" class="w-7 h-7 flex items-center justify-center text-black hover:scale-110 active:scale-90 transition-all z-10 cursor-pointer">
-                <span class="text-xs font-black">▶</span>
+              <!-- 右黒三角ナビマーク -->
+              <button id="face-next-arrow" class="w-8 h-8 flex items-center justify-center text-black hover:scale-110 active:scale-90 transition-all z-10 cursor-pointer">
+                <span class="text-sm font-black">▶</span>
               </button>
             </div>
 
