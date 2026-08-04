@@ -899,23 +899,26 @@
 
         ${(isNavScreen && !selectedPostModal) ? `
           <nav class="flat-bottom-nav">
-            <button id="nav-chaos" class="flex-1 py-1 flex justify-center items-center ${currentStep === 'chaos_gallery' ? 'text-black font-bold' : 'text-zinc-400'} hover:text-black transition-colors">
+            <button id="nav-chaos" class="flex-1 py-1 flex flex-col items-center justify-center ${currentStep === 'chaos_gallery' ? 'text-black font-bold' : 'text-zinc-400'} hover:text-black transition-colors relative">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <rect x="5" y="4" width="14" height="17" rx="2" stroke="currentColor" stroke-width="2" fill="none" />
                 <path d="M9 4V2h6v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                 <line x1="9" y1="9" x2="15" y2="9" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                 <line x1="9" y1="13" x2="15" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
               </svg>
+              ${currentStep === 'chaos_gallery' ? '<span class="w-1.5 h-1.5 bg-black rounded-full mt-1"></span>' : '<span class="w-1.5 h-1.5 bg-transparent rounded-full mt-1"></span>'}
             </button>
 
-            <button id="nav-create-burn" class="w-11 h-11 bg-black text-white rounded-full flex items-center justify-center text-xl font-bold shadow-md hover:bg-zinc-800 active:scale-95 transition-all mx-3 flex-shrink-0">
-              🔥
+            <button id="nav-create-burn" class="flex-1 py-1 flex flex-col items-center justify-center ${currentStep === 'solo_burn' ? 'text-black font-bold' : 'text-zinc-400'} hover:text-black transition-colors relative">
+              <span class="text-xl leading-none">🔥</span>
+              ${currentStep === 'solo_burn' ? '<span class="w-1.5 h-1.5 bg-black rounded-full mt-1"></span>' : '<span class="w-1.5 h-1.5 bg-transparent rounded-full mt-1"></span>'}
             </button>
 
-            <button id="nav-profile" class="flex-1 py-1 flex justify-center items-center ${currentStep === 'profile' ? 'text-black font-bold' : 'text-zinc-400'} hover:text-black transition-colors">
+            <button id="nav-profile" class="flex-1 py-1 flex flex-col items-center justify-center ${currentStep === 'profile' ? 'text-black font-bold' : 'text-zinc-400'} hover:text-black transition-colors relative">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
+              ${currentStep === 'profile' ? '<span class="w-1.5 h-1.5 bg-black rounded-full mt-1"></span>' : '<span class="w-1.5 h-1.5 bg-transparent rounded-full mt-1"></span>'}
             </button>
           </nav>
         ` : ''}
@@ -1130,7 +1133,7 @@
                     <span class="text-zinc-400 font-mono text-xs flex-shrink-0">${post.dateStr}</span>
                   </div>
 
-                  <p class="text-sm text-black leading-relaxed font-bold mb-3 break-words">
+                  <p class="text-sm text-black leading-relaxed font-medium mb-3 break-words">
                     ${post.text}
                   </p>
 
@@ -1289,7 +1292,7 @@
       `;
     }
 
-    // --- 本格🔥絵文字の全画面ダイナミック火炎物理シミュレーション ---
+    // --- 本格🔥絵文字の全画面ダイナミック火炎物理シミュレーション (3秒間持続・ゆらゆら直進上昇) ---
     function triggerRealFireBurnSimulation(onComplete) {
       const canvas = document.getElementById('real-fire-canvas');
       if (!canvas) {
@@ -1305,20 +1308,20 @@
       canvas.classList.add('active');
 
       let particles = [];
-      const particleCount = 75; // 多彩なサイズの🔥絵文字を配置
+      const particleCount = 85;
 
       for (let i = 0; i < particleCount; i++) {
         particles.push({
+          startX: Math.random() * canvas.width,
           x: Math.random() * canvas.width,
-          y: canvas.height + Math.random() * 120,
-          vx: (Math.random() - 0.5) * 4,
-          vy: -(Math.random() * 12 + 8),
-          size: Math.floor(Math.random() * 45 + 20), // 20px〜65pxのランダムサイズ
-          rotation: (Math.random() - 0.5) * 0.4,
-          rotSpeed: (Math.random() - 0.5) * 0.05,
+          y: canvas.height + Math.random() * 200,
+          vy: -(Math.random() * 6 + 4),
+          size: Math.floor(Math.random() * 45 + 20),
+          rotation: (Math.random() - 0.5) * 0.3,
+          rotSpeed: (Math.random() - 0.5) * 0.03,
           opacity: Math.random() * 0.5 + 0.5,
-          swayFreq: Math.random() * 0.01 + 0.005,
-          swayAmp: Math.random() * 3 + 1
+          swayFreq: Math.random() * 0.006 + 0.003,
+          swayAmp: Math.random() * 18 + 8
         });
       }
 
@@ -1330,13 +1333,20 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         // 背景の半透明暗転
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         particles.forEach(p => {
-          p.x += p.vx + Math.sin(now * p.swayFreq + p.y * 0.01) * p.swayAmp;
+          // 左右に優しくゆらゆら揺れながら、まっすぐ上空へ立ち上る
+          p.x = p.startX + Math.sin(now * p.swayFreq + p.y * 0.005) * p.swayAmp;
           p.y += p.vy;
           p.rotation += p.rotSpeed;
+
+          // 画面外に抜けたら下部からループ再生（3秒間途切れず燃え続ける）
+          if (p.y < -80 && elapsed < 2.5) {
+            p.y = canvas.height + Math.random() * 60;
+            p.startX = Math.random() * canvas.width;
+          }
 
           if (p.y > -100) {
             ctx.save();
@@ -1351,7 +1361,7 @@
           }
         });
 
-        if (elapsed < 1.4) {
+        if (elapsed < 3.0) {
           animId = requestAnimationFrame(loop);
         }
       }
@@ -1364,7 +1374,7 @@
           cancelAnimationFrame(animId);
           canvas.classList.remove('active');
         }, 300);
-      }, 1000);
+      }, 2700);
     }
 
     function closeModalWithAnimation() {
