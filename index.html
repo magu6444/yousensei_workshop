@@ -112,7 +112,7 @@
       background-color: #F7F9F9;
     }
 
-    /* カスタムスライダー（黒丸つまみを小さく 13px） */
+    /* カスタムスライダー */
     input[type=range] {
       -webkit-appearance: none;
       background: #EBEBEF;
@@ -242,19 +242,54 @@
       }
     };
 
-    // --- AI自動返信データベーステンプレート ---
-    const aiReplyTemplates = [
-      { name: '寄り添いAIお坊さん', handle: '@monk_bot', text: 'その苦しみとお悩み、ここで綺麗に燃やして浄化いたしました。心に静寂が訪れますように。🙏' },
-      { name: '共感観音AI', handle: '@kannon_ai', text: '本当によく耐えられましたね。あなたの感情は間違っていません。ゆっくり休んでくださいね。✨' },
-      { name: '匿名リスナー', handle: '@listener_99', text: 'めちゃくちゃ共感します…！私も同じようなことでイライラしていました。ここで燃やせて良かったですね！' },
-      { name: '浄化ボット', handle: '@purify_system', text: '【自動通知】提出された怨念パラメータを受理し、完全に消滅・浄化処理いたしました🔥' },
-      { name: '温かい通行人', handle: '@passerby_warm', text: '大変でしたね。合掌を1つ送らせていただきました。少しでも気持ちが軽くなりますように！🙏' },
-      { name: '解脱サポーター', handle: '@gedatsu_help', text: '他人の言動に振り回される必要はありません。あなたはあなたらしく、自分の時間を大切にしてください！' }
+    // --- ネット掲示板・SNSリアル炎上風コメント・アカウントデータベース ---
+    const viralUserNames = [
+      { name: '名無しさん@お腹いっぱい', handle: '@nanashi_2ch' },
+      { name: '裏アカウント@拡散希望', handle: '@ura_kakukan' },
+      { name: '通りすがりの特定班', handle: '@tokutei_expert' },
+      { name: '社会の底辺から', handle: '@sub_account_99' },
+      { name: '知恵袋回答者', handle: '@chiebukuro_master' },
+      { name: '物申す人', handle: '@monomosu_man' },
+      { name: '匿名希望', handle: '@tokumei_0921' },
+      { name: '激辛レビュアー', handle: '@gekikara_sub' },
+      { name: 'ウォッチ民', handle: '@watch_subscriber' },
+      { name: '炎上まとめ速報', handle: '@enjo_news_matome' }
     ];
+
+    const viralRepliesPool = [
+      'こいつ最低だろ…まじで引くわ',
+      'みんな拡散して特定しようぜｗｗｗ',
+      '関係者はどう思ってんだ？責任取れよ',
+      'はい炎上決定〜ｗｗｗ',
+      'こういう奴が一番害悪なんだよな',
+      '特定班仕事早くて草',
+      '会社どこ？特定求む',
+      'こんなの許されるわけないだろ。拡散拡散！',
+      '完全にアウト。社会的に終わったな',
+      'これ見た人全員リポストして世界に晒そうぜ',
+      '言い訳苦しすぎて草生えるわ',
+      '被害者の気持ち考えたことある？マジで無理',
+      'まとめサイトに載ってて見に来ましたｗｗｗ',
+      '謝罪文まだ〜？？？'
+    ];
+
+    function getRandomEnjoReplies(count = 5) {
+      let result = [];
+      for (let i = 0; i < count; i++) {
+        const u = viralUserNames[Math.floor(Math.random() * viralUserNames.length)];
+        const text = viralRepliesPool[Math.floor(Math.random() * viralRepliesPool.length)];
+        result.push({
+          name: u.name,
+          handle: `${u.handle}_${Math.floor(Math.random()*90+10)}`,
+          text: text
+        });
+      }
+      return result;
+    }
 
     // --- アプリケーション状態 ---
     let currentStep = 'intro'; // 'intro' | 'vibe_check' | 'solo_burn' | 'chaos_gallery' | 'profile'
-    let selectedPostModal = null; // タップして詳細開くポスト
+    let selectedPostModal = null;
 
     let vibes = {
       anger: 75,
@@ -272,80 +307,62 @@
     let posts = [
       {
         id: 'post-1',
-        userName: '匿名のお焚き上げ人',
-        userId: '@anon_otakiage',
+        userName: '名無しさん@お腹いっぱい',
+        userId: '@anon_ura_99',
         dateStr: '10分前',
         text: '休日にチャット送ってくる上司、頼むからスマホが海に沈んで一生起動しなくなってほしい。休日の静寂を返せ。',
         authorVibe: { anger: 90, sadness: 20, unfairness: 85, envy: 10, void: 40 },
         gasshoCount: 142,
         tag: '#仕事 #人間関係',
-        replies: [
-          aiReplyTemplates[0],
-          aiReplyTemplates[1],
-          aiReplyTemplates[2]
-        ]
+        replies: getRandomEnjoReplies(6)
       },
       {
         id: 'post-2',
-        userName: '浄化希望者',
-        userId: '@release_mind',
+        userName: '裏アカウント@拡散希望',
+        userId: '@ura_kakukan',
         dateStr: '25分前',
         text: 'SNSで匂わせ投稿を繰り返す元カノ、服装が絶妙にダサい現カレとの写真を見て妙に安心している自分が情けない。',
         authorVibe: { anger: 50, sadness: 70, unfairness: 40, envy: 95, void: 30 },
         gasshoCount: 289,
         tag: '#恋愛 #執着',
-        replies: [
-          aiReplyTemplates[1],
-          aiReplyTemplates[4]
-        ]
+        replies: getRandomEnjoReplies(5)
       },
       {
         id: 'post-3',
-        userName: '現場エンジニア',
-        userId: '@code_burner',
+        userName: '通りすがりの特定班',
+        userId: '@tokutei_expert',
         dateStr: '1時間前',
         text: '「これ簡単な仕事だからさ〜」と軽いノリで丸投げしてきた営業マン。じゃあ今すぐこのコード書いてみてくださいよ。',
         authorVibe: { anger: 95, sadness: 30, unfairness: 100, envy: 15, void: 20 },
         gasshoCount: 512,
         tag: '#仕事 #理不尽',
-        replies: [
-          aiReplyTemplates[2],
-          aiReplyTemplates[3],
-          aiReplyTemplates[5]
-        ]
+        replies: getRandomEnjoReplies(7)
       },
       {
         id: 'post-4',
-        userName: '通りすがりの怨念',
-        userId: '@ghost_vibe',
+        userName: '社会の底辺から',
+        userId: '@sub_account_99',
         dateStr: '2時間前',
         text: '自分は超サバサバ系って自称している人に限って、裏で人の顔色を窺い巧妙にマウントを取ってくる現象は何なんだ。',
         authorVibe: { anger: 60, sadness: 40, unfairness: 70, envy: 30, void: 90 },
         gasshoCount: 98,
         tag: '#人間関係',
-        replies: [
-          aiReplyTemplates[0],
-          aiReplyTemplates[4]
-        ]
+        replies: getRandomEnjoReplies(4)
       },
       {
         id: 'post-5',
-        userName: '夜更かしさん',
-        userId: '@midnight_ash',
+        userName: '知恵袋回答者',
+        userId: '@chiebukuro_master',
         dateStr: '4時間前',
         text: '努力は報われるって言葉、報われた奴しか言ってない。今日も何も解決しないまま夜が更けていく。',
         authorVibe: { anger: 20, sadness: 95, unfairness: 75, envy: 40, void: 80 },
         gasshoCount: 341,
         tag: '#自分 #社会',
-        replies: [
-          aiReplyTemplates[1],
-          aiReplyTemplates[2],
-          aiReplyTemplates[5]
-        ]
+        replies: getRandomEnjoReplies(6)
       }
     ];
 
-    // 無限スクロール用過去ログ生成ジェネレーター
+    // 無限スクロール用
     let postIndexCount = 6;
     const pastRantSamples = [
       '満員電車でリュック降ろさずに肘ぶつけてくるやつ、全員靴紐がほどけて転びますように。',
@@ -361,10 +378,11 @@
         const sampleText = pastRantSamples[Math.floor(Math.random() * pastRantSamples.length)];
         const tags = ['#仕事', '#人間関係', '#自分', '#社会', '#恋愛'];
         const tag1 = tags[Math.floor(Math.random() * tags.length)];
+        const u = viralUserNames[Math.floor(Math.random() * viralUserNames.length)];
         posts.push({
           id: `post-gen-${Date.now()}-${i}`,
-          userName: `匿名お焚き上げ #${postIndexCount}`,
-          userId: `@otakiage_${postIndexCount}`,
+          userName: u.name,
+          userId: `${u.handle}_${postIndexCount}`,
           dateStr: `${postIndexCount * 2}時間前`,
           text: sampleText,
           authorVibe: {
@@ -376,10 +394,7 @@
           },
           gasshoCount: Math.floor(Math.random() * 200 + 10),
           tag: tag1,
-          replies: [
-            aiReplyTemplates[Math.floor(Math.random() * aiReplyTemplates.length)],
-            aiReplyTemplates[Math.floor(Math.random() * aiReplyTemplates.length)]
-          ]
+          replies: getRandomEnjoReplies(Math.floor(Math.random() * 5 + 3))
         });
         postIndexCount++;
       }
@@ -571,10 +586,10 @@
           ${currentStep === 'profile' ? renderProfileView() : ''}
         </main>
 
-        <!-- ポスト詳細モーダル (タップして開くAI返信付き) -->
+        <!-- ポスト詳細モーダル (炎上コメントレスキュー) -->
         ${selectedPostModal ? renderPostDetailModal() : ''}
 
-        <!-- スマホ用ボトムタブ（言葉なし！掲示板マーク📋 ＆ 人型マーク👤 のみ） -->
+        <!-- スマホ用ボトムタブ（文字なし！掲示板マーク📋 ＆ 人型マーク👤） -->
         ${(currentStep === 'chaos_gallery' || currentStep === 'profile') ? `
           <nav class="border-t border-paper-border bg-white sticky bottom-0 z-50 flex justify-around py-3">
             <button id="nav-chaos" class="flex-1 py-1 text-center font-bold flex flex-col items-center justify-center ${currentStep === 'chaos_gallery' ? 'text-black' : 'text-zinc-400'}">
@@ -610,7 +625,7 @@
           }
         });
 
-        // タイムラインの無限スクロールリスナー登録
+        // タイムライン無限スクロール
         window.onscroll = () => {
           if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 250) {
             generateMorePosts();
@@ -681,7 +696,6 @@
 
           </div>
 
-          <!-- スタートボタン (位置: pb-16, サイズ: w-14 h-14) -->
           <div class="w-full pb-16 flex justify-center">
             <button id="btn-start-app" class="w-14 h-14 bg-black text-white font-bold text-xl rounded-full hover:bg-zinc-800 hover:scale-105 active:scale-95 transition-all flex items-center justify-center">
               <span>→</span>
@@ -692,7 +706,7 @@
       `;
     }
 
-    // --- STEP 1: 自分の感情設定（位置をもっと下へ移動・スライダー黒丸13px） ---
+    // --- STEP 1: 自分の感情設定 ---
     function renderStep1VibeCheck() {
       const t = i18n[currentLang];
       return `
@@ -812,17 +826,16 @@
       `;
     }
 
-    // --- STEP 3: みんなのお焚き上げ（現X / 旧Twitter風UI & 無限スクロール & タップ詳細モーダル） ---
+    // --- STEP 3: みんなのお焚き上げ ---
     function renderStep3ChaosGallery() {
       const t = i18n[currentLang];
       return `
         <div class="flex-1 flex flex-col fade-in bg-white min-h-screen">
           <div class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-paper-border px-4 py-3 flex items-center justify-between">
             <h3 class="text-base font-black text-black">${t.chaosTitle}</h3>
-            <span class="text-[10px] font-mono text-zinc-400">TAP POST TO REPLY</span>
+            <span class="text-[10px] font-mono text-zinc-400 uppercase">🔥 ENJO TIMELINE</span>
           </div>
 
-          <!-- 現X風タイムラインポスト表示 (説明文削除、タップでモーダル開く) -->
           <div class="divide-y divide-paper-border">
             ${posts.map((post) => `
               <div data-postid="${post.id}" class="x-post-card post-item-card flex gap-3">
@@ -850,15 +863,14 @@
                   </div>
 
                   <div class="flex items-center justify-between text-zinc-500 text-xs max-w-xs pt-1">
-                    <!-- リプライ吹き出し -->
                     <div class="flex items-center gap-1.5 hover:text-black transition-colors">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                      <svg class="w-4 h-4 text-red-500 fill-red-500" viewBox="0 0 24 24">
+                        <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                        <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
                       </svg>
-                      <span class="text-[11px] font-mono">${post.replies ? post.replies.length : 0}</span>
+                      <span class="text-[11px] font-bold text-red-600">${post.replies ? post.replies.length : 0} 炎上レス</span>
                     </div>
 
-                    <!-- 🙏 合掌ボタン -->
                     <button data-postid="${post.id}" class="btn-gassho flex items-center gap-1.5 hover:text-red-500 transition-colors">
                       <span class="text-sm">🙏</span>
                       <span id="gassho-count-${post.id}" class="text-[11px] font-bold text-black">${post.gasshoCount}</span>
@@ -872,20 +884,23 @@
       `;
     }
 
-    // --- ポストタップ時のAI返信・詳細表示モーダル ---
+    // --- ポストタップ時の大量リアル炎上コメント表示モーダル ---
     function renderPostDetailModal() {
       const p = selectedPostModal;
       return `
-        <div class="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex justify-center items-end sm:items-center fade-in">
-          <div class="bg-white w-full max-w-md max-h-[85vh] rounded-t-2xl sm:rounded-2xl p-5 overflow-y-auto flex flex-col justify-between shadow-2xl">
+        <div class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex justify-center items-end sm:items-center fade-in">
+          <div class="bg-white w-full max-w-md max-h-[90vh] rounded-t-2xl sm:rounded-2xl p-5 overflow-y-auto flex flex-col justify-between shadow-2xl">
             <div>
               <div class="flex justify-between items-center pb-3 border-b border-paper-border mb-4">
-                <span class="text-xs font-bold text-black">お焚き上げ詳細 / AI返信</span>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-black text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">🔥 炎上中レスキュー</span>
+                  <span class="text-[10px] text-zinc-400 font-mono">${p.replies ? p.replies.length : 0} コメント</span>
+                </div>
                 <button id="btn-close-modal" class="text-zinc-500 font-bold text-lg px-2 hover:text-black">✕</button>
               </div>
 
-              <!-- ポスト本体 -->
-              <div class="flex gap-3 mb-4">
+              <!-- 投稿元テキスト -->
+              <div class="flex gap-3 mb-5 p-3 bg-zinc-50 rounded-xl border border-zinc-200">
                 <div class="w-10 h-10 rounded-full border border-paper-border overflow-hidden bg-white p-0.5 flex-shrink-0">
                   <canvas id="modal-canvas-${p.id}" class="block"></canvas>
                 </div>
@@ -899,34 +914,34 @@
                 </div>
               </div>
 
-              <!-- AIリプライ・返信一覧 -->
+              <!-- ネット掲示板・裏垢風炎上レス一覧 -->
               <div class="border-t border-paper-border pt-3">
-                <h4 class="text-xs font-bold text-zinc-500 mb-3">💬 返信・AIコメント (${p.replies ? p.replies.length : 0}件)</h4>
+                <h4 class="text-xs font-black text-black mb-3">🔥 タイムラインの反応・レスポンス</h4>
                 
-                <div class="space-y-3">
+                <div class="space-y-2.5">
                   ${p.replies && p.replies.map(r => `
-                    <div class="bg-paper p-3 rounded-xl text-xs">
-                      <div class="flex items-center gap-1.5 mb-1">
-                        <span class="font-bold text-black text-[11px]">${r.name}</span>
+                    <div class="bg-white border border-zinc-100 p-3 rounded-xl text-xs shadow-xs">
+                      <div class="flex items-center justify-between mb-1">
+                        <span class="font-bold text-zinc-700 text-[11px]">${r.name}</span>
                         <span class="text-[9px] text-zinc-400 font-mono">${r.handle}</span>
                       </div>
-                      <p class="text-zinc-800 font-medium text-[11px] leading-relaxed">${r.text}</p>
+                      <p class="text-black font-bold text-[11px] leading-relaxed">${r.text}</p>
                     </div>
                   `).join('')}
                 </div>
               </div>
             </div>
 
-            <!-- コメント入力エリア -->
+            <!-- 追撃コメント入力欄 -->
             <div class="pt-4 border-t border-paper-border mt-4 flex items-center gap-2">
               <input
                 type="text"
                 id="modal-reply-input"
-                placeholder="共感や励ましの言葉を入力..."
-                class="flex-1 px-3 py-2 text-xs border border-paper-border rounded-full focus:outline-none focus:border-black"
+                placeholder="追撃コメントを投下..."
+                class="flex-1 px-3 py-2 text-xs border border-paper-border rounded-full focus:outline-none focus:border-black font-medium"
               />
               <button id="btn-submit-reply" class="px-4 py-2 bg-black text-white text-xs font-bold rounded-full hover:bg-zinc-800">
-                送信
+                投下
               </button>
             </div>
           </div>
@@ -979,7 +994,7 @@
       `;
     }
 
-    // --- 体感約4秒のじわじわ炎上アニメーション & 次画面スライドイン ---
+    // --- 体感4秒のじわじわ炎上アニメーション ---
     function triggerRealisticFireTransition(onComplete) {
       const fireCanvas = document.getElementById('fire-canvas');
       if (!fireCanvas) {
@@ -1009,7 +1024,7 @@
       soundEngine.playSoftBurn();
 
       let progress = 0;
-      const durationFrames = 220; // 体感約4秒間じわじわ燃え上がる
+      const durationFrames = 220;
       let frame = 0;
 
       function drawSlowFlameFrame() {
@@ -1201,7 +1216,7 @@
         };
       }
 
-      // STEP 2 -> STEP 3 (体感4秒のじわじわ燃え上がる炎アニメーション)
+      // STEP 2 -> STEP 3 (自分の投稿即時大量炎上レス生成)
       const executeBurnBtn = document.getElementById('btn-execute-burn');
       if (executeBurnBtn) {
         executeBurnBtn.onclick = () => {
@@ -1210,13 +1225,16 @@
           if (!val) return;
 
           triggerRealisticFireTransition(() => {
-            const maxVibeKey = Object.keys(vibes).reduce((a, b) => vibes[a] > vibes[b] ? a : b);
-            const vibeNameMap = { anger: 'いらいら', sadness: '悲しい', unfairness: '理不尽', envy: '嫉妬', void: '虚無' };
-
-            // 新規投稿時にも自動でAI返信を1〜2件添付する
-            const autoReplies = [
-              aiReplyTemplates[Math.floor(Math.random() * aiReplyTemplates.length)],
-              aiReplyTemplates[Math.floor(Math.random() * aiReplyTemplates.length)]
+            // 自分の投稿直後に即座に大量のリアル炎上レス（8〜10件）がぶら下がる
+            const instantEnjoReplies = [
+              { name: '裏アカウント@拡散希望', handle: '@ura_kakukan_01', text: 'こいつ最低だな。拡散します。' },
+              { name: '名無しさん@お腹いっぱい', handle: '@nanashi_2ch_99', text: '完全に燃えてて草。反省してなさそう' },
+              { name: '通りすがりの特定班', handle: '@tokutei_expert', text: '関係者はどう思ってるんだ？責任取れよ' },
+              { name: '物申す人', handle: '@monomosu_man', text: 'これマジで言ってる？人としてあり得ないだろ' },
+              { name: '激辛レビュアー', handle: '@gekikara_sub', text: '特定班仕事早くて草。まとめサイト載るなこれ' },
+              { name: '知恵袋回答者', handle: '@chiebukuro_master', text: '社会的にアウト。全員で晒していこうぜｗｗｗ' },
+              { name: 'ウォッチ民', handle: '@watch_sub', text: '即炎上しててワロタｗｗｗｗｗｗ' },
+              { name: '炎上まとめ速報', handle: '@enjo_news', text: '【速報】またヤバい投稿が発見されるｗｗｗ' }
             ];
 
             posts.unshift({
@@ -1228,7 +1246,7 @@
               authorVibe: { ...vibes },
               gasshoCount: 1,
               tag: selectedTags.join(' '),
-              replies: autoReplies
+              replies: instantEnjoReplies
             });
 
             burnStats.totalBurned += 1;
@@ -1240,10 +1258,9 @@
         };
       }
 
-      // ポストタップでAI返信モーダルを開く
+      // ポストタップで炎上モーダルを開く
       document.querySelectorAll('.post-item-card').forEach(card => {
         card.onclick = (e) => {
-          // 合掌ボタン押し時は発火させない
           if (e.target.closest('.btn-gassho')) return;
           const postId = card.dataset.postid;
           const post = posts.find(p => p.id === postId);
@@ -1264,7 +1281,7 @@
         };
       }
 
-      // モーダル内でユーザー返信追加
+      // モーダル内で追撃コメント追加
       const submitReplyBtn = document.getElementById('btn-submit-reply');
       if (submitReplyBtn && selectedPostModal) {
         submitReplyBtn.onclick = () => {
@@ -1272,8 +1289,8 @@
           if (input && input.value.trim()) {
             if (!selectedPostModal.replies) selectedPostModal.replies = [];
             selectedPostModal.replies.push({
-              name: 'あなた',
-              handle: '@you',
+              name: '名無しさん@追撃',
+              handle: '@enjo_chaser',
               text: input.value.trim()
             });
             input.value = '';
