@@ -203,6 +203,15 @@
       background-color: #111111;
     }
 
+    /* 2/3ボトムシートモーダルアニメーション */
+    .bottom-sheet-slide-up {
+      animation: bottomSheetUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes bottomSheetUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
     .fade-in {
       animation: fadeIn 0.3s ease forwards;
     }
@@ -468,10 +477,11 @@
       { name: '激辛ウォッチ民', handle: '@gekikara_sub' }
     ];
 
+    // 高精度・多角的な共感＆炎上レス自動生成エンジン
     function generateContextualSympatheticEnjoReplies(userText) {
       const lower = userText.toLowerCase();
-      const isWork = lower.includes('上司') || lower.includes('仕事') || lower.includes('会社') || lower.includes('残業') || lower.includes('営業') || lower.includes('コード') || lower.includes('チャット');
-      const isRelationship = lower.includes('友達') || lower.includes('彼女') || lower.includes('彼氏') || lower.includes('元カノ') || lower.includes('LINE') || lower.includes('マウント') || lower.includes('SNS');
+      const isWork = lower.includes('上司') || lower.includes('仕事') || lower.includes('会社') || lower.includes('残業') || lower.includes('営業') || lower.includes('コード') || lower.includes('チャット') || lower.includes('労基');
+      const isRelationship = lower.includes('友達') || lower.includes('彼女') || lower.includes('彼氏') || lower.includes('元カノ') || lower.includes('LINE') || lower.includes('マウント') || lower.includes('SNS') || lower.includes('デート');
 
       let replyPool = [];
       if (isWork) {
@@ -480,26 +490,33 @@
           '休日の連絡は労働基準法違反だろ。会社名と上司の部署マジで晒してほしいレベルで腹立つな。',
           'わかりすぎる…自分の都合しか考えてない老害上司多すぎて全員消えてほしい。',
           'こいつマジで最低だな。頼むからSNSで拡散されて痛い目見てほしい。投稿者さん応援するわ。',
-          '関係者はこの上司の暴挙どう思ってんだよ？労基に通報して炎上させてやろうぜ！'
+          '関係者はこの上司の暴挙どう思ってんだよ？労基に通報して炎上させてやろうぜ！',
+          '労働組合とか第三者機関に駆け込んだ方がいいレベル。マジでお疲れ様です…',
+          'こういう奴に限って「最近の若者は〜」とか言い出すの本当に日本の害悪。',
+          '投稿主さんのメンタルが心配…マジでこんな会社早く脱出して痛い目見せよう。'
         ];
       } else if (isRelationship) {
         replyPool = [
           '匂わせ投稿する奴もマウント取ってくる奴も人間性腐ってて引くわ…全員晒されろ。',
           '裏でコソコソマウント取ってくる奴が一番害悪！みんなで拡散して居場所無くしてやろうぜ。',
           'マジで腹立つなこれ！投稿者さんが優しすぎるだけだよ。相手の自意識過剰ぶりが痛すぎる。',
-          'こいつ最低だろ…元カノも現カレもまとめて炎上して痛い目に遭えばいいのに。'
+          'こいつ最低だろ…元カノも現カレもまとめて炎上して痛い目に遭えばいいのに。',
+          '自分を客観視できてなさすぎて笑う。投稿者さんはもっと素敵な人と出会えます！',
+          '即縁切り推奨案件！こんな奴のために一瞬でも感情揺さぶられるの時間の無駄！'
         ];
       } else {
         replyPool = [
           '投稿者さんの言ってること100%正しい！こんな理不尽な奴まじで最低だろ…',
           '胸糞わるすぎる！みんなで大拡散してこの胸糞案件をネット全体で炎上させようぜ。',
           '関係者はどう思ってんだ？当事者出てきて謝罪しろよ！晒されて当たり前のレベル。',
-          'これ見た人全員拡散して！こんなのが許される社会であっちゃいけないだろ。'
+          'これ見た人全員拡散して！こんなのが許される社会であっちゃいけないだろ。',
+          '共感しかない…その場にいたら代わりにブチギレてやりたいレベル。',
+          '私まで腹立ってきた！投稿主さん、ここで全部吐き出してスッキリしてくださいね。'
         ];
       }
 
       let result = [];
-      const count = Math.floor(Math.random() * 2) + 4;
+      const count = Math.floor(Math.random() * 3) + 5; // 5〜7件の豊富なレス生成
       const shuffledUsers = [...viralUserNames].sort(() => 0.5 - Math.random());
       for (let i = 0; i < count; i++) {
         const u = shuffledUsers[i % shuffledUsers.length];
@@ -603,7 +620,7 @@
       ashWeight: '1.4kg'
     };
 
-    // --- POLA APEXメッシュ変形描画 ---
+    // --- 【重要修正】顔切り抜き写真をキャンバス最前面にレイヤー配置 ＆ 同心5角形ガイド線を背景へ ---
     function drawPolaApexMeshDistortedFace(canvas, vibesData, showMetrics = true, customPhotoImg = null) {
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
@@ -639,29 +656,7 @@
         return { x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r };
       });
 
-      const activePhoto = customPhotoImg || capturedPhotoImg || fallbackUserFaceImg;
-
-      // 1. 変形顔テクスチャを描画
-      if (activePhoto && activePhoto.complete) {
-        const srcW = activePhoto.width || 300;
-        const srcH = activePhoto.height || 300;
-
-        const srcCenter = { x: srcW / 2, y: srcH / 2 };
-        const src5Points = angles.map(a => ({
-          x: srcCenter.x + Math.cos(a) * (srcW * 0.46),
-          y: srcCenter.y + Math.sin(a) * (srcH * 0.46)
-        }));
-
-        for (let i = 0; i < 5; i++) {
-          const next = (i + 1) % 5;
-          const sTriangle = [srcCenter, src5Points[i], src5Points[next]];
-          const dTriangle = [{ x: cx, y: cy }, poly5Points[i], poly5Points[next]];
-
-          drawTexturedTriangle(ctx, activePhoto, sTriangle, dTriangle);
-        }
-      }
-
-      // 2. 同心5角形ガイド線
+      // レイヤー1（最下層）：同心5角形ガイド線
       ctx.strokeStyle = '#EBEBEF';
       ctx.lineWidth = 1;
       [0.25, 0.5, 0.75, 1.0].forEach(rScale => {
@@ -683,6 +678,27 @@
         ctx.lineTo(cx + Math.cos(a) * radiusMax, cy + Math.sin(a) * radiusMax);
         ctx.stroke();
       });
+
+      // レイヤー2（最前面）：顔の切り抜き写真テクスチャを100%くっきり重ね描画！
+      const activePhoto = customPhotoImg || capturedPhotoImg || fallbackUserFaceImg;
+      if (activePhoto && activePhoto.complete) {
+        const srcW = activePhoto.width || 300;
+        const srcH = activePhoto.height || 300;
+
+        const srcCenter = { x: srcW / 2, y: srcH / 2 };
+        const src5Points = angles.map(a => ({
+          x: srcCenter.x + Math.cos(a) * (srcW * 0.46),
+          y: srcCenter.y + Math.sin(a) * (srcH * 0.46)
+        }));
+
+        for (let i = 0; i < 5; i++) {
+          const next = (i + 1) % 5;
+          const sTriangle = [srcCenter, src5Points[i], src5Points[next]];
+          const dTriangle = [{ x: cx, y: cy }, poly5Points[i], poly5Points[next]];
+
+          drawTexturedTriangle(ctx, activePhoto, sTriangle, dTriangle);
+        }
+      }
 
       if (showMetrics) {
         ctx.fillStyle = '#111111';
@@ -759,7 +775,7 @@
       }
 
       root.innerHTML = `
-        <main class="flex-1 p-0 flex flex-col justify-start bg-white">
+        <main class="flex-1 p-0 flex flex-col justify-start bg-white pb-16">
           ${currentStep === 'vibe_check' ? renderStep1VibeCheck() : ''}
           ${currentStep === 'solo_burn' ? renderStep2SoloBurn() : ''}
           ${currentStep === 'chaos_gallery' ? renderStep3ChaosGallery() : ''}
@@ -768,17 +784,16 @@
 
         ${selectedPostModal ? renderPostDetailModal() : ''}
 
+        <!-- 洗練されたボトムナビゲーションバー（📋 タイムライン / 👤 マイページ） -->
         ${((currentStep === 'chaos_gallery' || currentStep === 'profile') && !selectedPostModal) ? `
-          <nav class="border-t border-paper-border bg-white sticky bottom-0 z-50 flex justify-around py-3">
-            <button id="nav-chaos" class="flex-1 py-1 text-center font-bold flex flex-col items-center justify-center ${currentStep === 'chaos_gallery' ? 'text-black' : 'text-zinc-400'}">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
-              </svg>
+          <nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto z-40 bg-white/95 backdrop-blur-md border-t border-paper-border py-2 px-6 flex justify-around items-center">
+            <button id="nav-chaos" class="flex flex-col items-center gap-1 ${currentStep === 'chaos_gallery' ? 'text-black' : 'text-zinc-400'} hover:text-black transition-colors">
+              <span class="text-xl">📋</span>
+              <span class="text-[10px] font-bold tracking-tight">タイムライン</span>
             </button>
-            <button id="nav-profile" class="flex-1 py-1 text-center font-bold flex flex-col items-center justify-center ${currentStep === 'profile' ? 'text-black' : 'text-zinc-400'}">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-              </svg>
+            <button id="nav-profile" class="flex flex-col items-center gap-1 ${currentStep === 'profile' ? 'text-black' : 'text-zinc-400'} hover:text-black transition-colors">
+              <span class="text-xl">👤</span>
+              <span class="text-[10px] font-bold tracking-tight">マイページ</span>
             </button>
           </nav>
         ` : ''}
@@ -1001,16 +1016,11 @@
       `;
     }
 
-    // --- STEP 3: みんなのお焚き上げ ---
+    // --- STEP 3: タイムライン（「みんなのお焚き上げ」タイトル＆ヘッダー線を削除して究極クリーン化） ---
     function renderStep3ChaosGallery() {
       const t = i18n[currentLang];
       return `
         <div class="flex-1 flex flex-col fade-in bg-white min-h-screen">
-          <div class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-paper-border px-4 py-3 flex items-center justify-between">
-            <h3 class="text-base font-black text-black">${t.chaosTitle}</h3>
-            <span class="text-[10px] font-mono text-zinc-400 uppercase">LIVE</span>
-          </div>
-
           <div class="divide-y divide-paper-border">
             ${posts.map((post) => `
               <div data-postid="${post.id}" class="x-post-card post-item-card flex gap-3">
@@ -1058,56 +1068,65 @@
       `;
     }
 
-    // --- モーダル ---
+    // --- 【スワイプ対応・画面2/3ストップ・固定元投稿＆無制限スクロールリプライ・下スワイプ閉じモーダル】 ---
     function renderPostDetailModal() {
       const p = selectedPostModal;
       return `
-        <div class="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex justify-center items-end sm:items-center fade-in">
-          <div class="bg-white w-full max-w-md h-[90vh] rounded-t-2xl sm:rounded-2xl p-4 overflow-hidden flex flex-col justify-between">
-            <div class="flex justify-between items-center pb-2 border-b border-paper-border mb-2 flex-shrink-0">
-              <span class="text-xs font-mono text-zinc-400">REPLIES (${p.replies ? p.replies.length : 0})</span>
-              <button id="btn-close-modal" class="text-zinc-500 font-bold text-lg px-2 hover:text-black">✕</button>
+        <div id="modal-backdrop" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex justify-center items-end fade-in">
+          <div id="modal-sheet" class="bg-white w-full max-w-md h-[68vh] rounded-t-3xl shadow-2xl flex flex-col justify-between overflow-hidden bottom-sheet-slide-up transition-transform duration-200">
+            
+            <!-- スワイプインジケータ（下スワイプで閉じるジェスチャー対応） -->
+            <div id="modal-drag-handle" class="w-full py-2.5 flex justify-center items-center cursor-grab active:cursor-grabbing flex-shrink-0 bg-white border-b border-zinc-100">
+              <div class="w-12 h-1.5 bg-zinc-300 rounded-full"></div>
             </div>
 
-            <div class="flex-1 overflow-y-auto pr-1 space-y-3">
-              <div class="flex gap-3 p-3 bg-zinc-50 rounded-xl border border-zinc-200">
-                <div class="w-10 h-10 rounded-full border border-paper-border overflow-hidden bg-white p-0.5 flex-shrink-0">
-                  <canvas id="modal-canvas-${p.id}" class="block"></canvas>
-                </div>
-                <div>
-                  <div class="flex items-center gap-2 text-xs">
-                    <span class="font-bold text-black">${p.userName}</span>
-                    <span class="text-zinc-400 font-mono text-[10px]">${p.userId}</span>
+            <div class="flex-1 flex flex-col min-h-0 bg-white">
+              
+              <!-- 固定エリア：元の投稿カード（スクロールしても上部に固定表示） -->
+              <div class="p-4 bg-zinc-50 border-b border-zinc-200 flex-shrink-0">
+                <div class="flex gap-3">
+                  <div class="w-10 h-10 rounded-full border border-paper-border overflow-hidden bg-white p-0.5 flex-shrink-0">
+                    <canvas id="modal-canvas-${p.id}" class="block"></canvas>
                   </div>
-                  <p class="text-xs text-black font-bold mt-1 leading-relaxed">${p.text}</p>
-                  <div class="text-[10px] text-paper-accent font-bold mt-1">${p.tag}</div>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-2 text-xs mb-1">
+                      <span class="font-bold text-black truncate">${p.userName}</span>
+                      <span class="text-zinc-400 font-mono text-[10px] truncate">${p.userId}</span>
+                    </div>
+                    <p class="text-xs text-black font-bold leading-relaxed break-words">${p.text}</p>
+                    <div class="text-[10px] text-paper-accent font-bold mt-1.5">${p.tag}</div>
+                  </div>
                 </div>
               </div>
 
-              <div class="space-y-2 pt-1">
+              <!-- スライド・無限スクロールエリア：無制限のリプライ一覧 -->
+              <div class="flex-1 overflow-y-auto p-4 space-y-2.5 bg-white">
                 ${p.replies && p.replies.map(r => `
-                  <div class="bg-white border border-zinc-100 p-3 rounded-xl text-xs">
+                  <div class="bg-paper border border-paper-border p-3 rounded-2xl text-xs hover:border-zinc-300 transition-colors">
                     <div class="flex items-center justify-between mb-1">
-                      <span class="font-bold text-zinc-800 text-[11px]">${r.name}</span>
+                      <span class="font-bold text-zinc-900 text-[11px]">${r.name}</span>
                       <span class="text-[9px] text-zinc-400 font-mono">${r.handle}</span>
                     </div>
-                    <p class="text-zinc-900 font-medium text-[11px] leading-relaxed">${r.text}</p>
+                    <p class="text-zinc-800 font-medium text-[11px] leading-relaxed break-words">${r.text}</p>
                   </div>
                 `).join('')}
               </div>
+
             </div>
 
-            <div class="pt-3 border-t border-paper-border flex-shrink-0 flex items-center gap-2 bg-white">
+            <!-- 固定エリア：返信入力フォーム（最下部に固定） -->
+            <div class="p-3 border-t border-paper-border flex-shrink-0 flex items-center gap-2 bg-white sticky bottom-0">
               <input
                 type="text"
                 id="modal-reply-input"
-                placeholder="返信を投稿..."
+                placeholder="共感・お焚き上げレスを書く..."
                 class="flex-1 px-4 py-2.5 text-xs bg-paper border border-paper-border rounded-full focus:outline-none focus:border-black font-medium"
               />
-              <button id="btn-submit-reply" class="px-4 py-2.5 bg-black text-white text-xs font-bold rounded-full hover:bg-zinc-800 flex-shrink-0">
+              <button id="btn-submit-reply" class="px-4 py-2.5 bg-black text-white text-xs font-bold rounded-full hover:bg-zinc-800 flex-shrink-0 transition-all active:scale-95">
                 送信
               </button>
             </div>
+
           </div>
         </div>
       `;
@@ -1188,7 +1207,7 @@
       }, 1100);
     }
 
-    // --- イベントリスナー ---
+    // --- イベントリスナー ＆ 下スワイプジェスチャー制御 ---
     function setupEventListeners() {
       const btnJp = document.getElementById('lang-btn-jp');
       if (btnJp) {
@@ -1218,14 +1237,6 @@
             currentStep = 'vibe_check';
             renderApp();
           });
-        };
-      }
-
-      const navBurnBtn = document.getElementById('btn-nav-burn');
-      if (navBurnBtn) {
-        navBurnBtn.onclick = () => {
-          currentStep = 'vibe_check';
-          renderApp();
         };
       }
 
@@ -1386,11 +1397,43 @@
         };
       });
 
-      const closeModalBtn = document.getElementById('btn-close-modal');
-      if (closeModalBtn) {
-        closeModalBtn.onclick = () => {
-          selectedPostModal = null;
-          renderApp();
+      // --- 下スワイプでボトムシートモーダルを閉じるジェスチャー実装 ---
+      const modalSheet = document.getElementById('modal-sheet');
+      const modalBackdrop = document.getElementById('modal-backdrop');
+      const dragHandle = document.getElementById('modal-drag-handle');
+
+      if (modalSheet && dragHandle) {
+        let sheetTouchStartY = 0;
+        let currentTranslateY = 0;
+
+        dragHandle.ontouchstart = (e) => {
+          sheetTouchStartY = e.touches[0].clientY;
+        };
+
+        dragHandle.ontouchmove = (e) => {
+          const currentY = e.touches[0].clientY;
+          const diffY = currentY - sheetTouchStartY;
+          if (diffY > 0) {
+            currentTranslateY = diffY;
+            modalSheet.style.transform = `translateY(${diffY}px)`;
+          }
+        };
+
+        dragHandle.ontouchend = () => {
+          if (currentTranslateY > 80) {
+            selectedPostModal = null;
+            renderApp();
+          } else {
+            modalSheet.style.transform = 'translateY(0)';
+          }
+          currentTranslateY = 0;
+        };
+
+        modalBackdrop.onclick = (e) => {
+          if (e.target === modalBackdrop) {
+            selectedPostModal = null;
+            renderApp();
+          }
         };
       }
 
@@ -1400,7 +1443,7 @@
           const input = document.getElementById('modal-reply-input');
           if (input && input.value.trim()) {
             if (!selectedPostModal.replies) selectedPostModal.replies = [];
-            selectedPostModal.replies.push({
+            selectedPostModal.replies.unshift({
               name: 'あなた',
               handle: '@you',
               text: input.value.trim()
