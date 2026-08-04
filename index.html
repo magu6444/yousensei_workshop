@@ -50,13 +50,13 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* 掲示板（タイムライン）以外は1画面ジャストフィット（Safe Area Bottom対応） */
+    /* 掲示板（タイムライン）以外は1画面ジャストフィット */
     body.no-scroll {
       overflow-y: hidden;
       touch-action: none;
     }
 
-    /* タイトル画面ポスター (iPhoneボトムバー被り防止: pb-24 / safe-area-pb) */
+    /* タイトル画面ポスター (ボタン位置をかなり上へ引き上げ: pb-36) */
     .intro-poster {
       display: flex;
       flex-direction: column;
@@ -64,7 +64,7 @@
       height: 100vh;
       height: -webkit-fill-available;
       background: #FFFFFF;
-      padding: 1.25rem 1.25rem calc(5rem + env(safe-area-inset-bottom)) 1.25rem;
+      padding: 1.25rem 1.25rem calc(9rem + env(safe-area-inset-bottom)) 1.25rem;
       letter-spacing: -0.02em;
     }
 
@@ -78,7 +78,7 @@
 
     .poster-char {
       font-weight: 900 !important;
-      font-size: 12.5vw;
+      font-size: 11.5vw;
       color: #111111;
       font-family: 'Noto Sans', 'Noto Sans JP', sans-serif;
       font-style: normal;
@@ -89,12 +89,12 @@
 
     @media (min-width: 500px) {
       .poster-char {
-        font-size: 3.8rem;
+        font-size: 3.5rem;
       }
     }
 
     .poster-emoji {
-      font-size: 10.5vw;
+      font-size: 9.5vw;
       line-height: 1;
       transform: scale(1.1);
       display: inline-block;
@@ -104,7 +104,7 @@
 
     @media (min-width: 500px) {
       .poster-emoji {
-        font-size: 3.3rem;
+        font-size: 3.0rem;
       }
     }
 
@@ -343,7 +343,6 @@
       }
     };
 
-    // --- ネットユーザーアカウントデータベース ---
     const viralUserNames = [
       { name: '名無しさん@お腹いっぱい', handle: '@nanashi_2ch' },
       { name: '裏アカウント@拡散希望', handle: '@ura_kakukan' },
@@ -418,7 +417,6 @@
     let categoryTags = ['#仕事', '#人間関係', '#恋愛', '#自分', '#理不尽', '#社会'];
     let selectedTags = ['#仕事'];
 
-    // 豊富なバリエーションのお焚き上げ初期投稿リスト
     let posts = [
       {
         id: 'post-1',
@@ -510,7 +508,6 @@
       }
     ];
 
-    // 無限スクロール用過去ログ自動生成データベース
     let postIndexCount = 9;
     const pastRantSamples = [
       '店員さんに横柄な態度取る人とデートした。一瞬で冷めてその場で会計別々にして帰ってきた。',
@@ -553,7 +550,7 @@
       ashWeight: '1.4kg'
     };
 
-    // --- 【POLA APEXスタイル】顔写真テクスチャUV歪みマッピング描画 ---
+    // --- POLA APEXスタイル描画 ---
     function drawMinimalDistortedFace(canvas, vibesData, showMetrics = true, customPhotoImg = null) {
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
@@ -563,7 +560,6 @@
       const cy = height / 2;
 
       ctx.clearRect(0, 0, width, height);
-
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, width, height);
 
@@ -751,7 +747,6 @@
           }
         });
 
-        // 永遠にスクロールして見られる無限スクロールリスナー
         window.onscroll = () => {
           if (!selectedPostModal && (window.innerHeight + window.scrollY) >= document.body.offsetHeight - 300) {
             generateMorePosts();
@@ -777,11 +772,11 @@
       }
     }
 
-    // --- STEP 0: ロード / オープニング画面（ボタン位置向上＆文字サイズ調整でiPhoneボトムバー被り防止） ---
+    // --- STEP 0: ロード / オープニング画面 (ボタン位置を画面中央寄り〜ツールバーかなり上へ引き上げ) ---
     function renderStep0Intro() {
       const t = i18n[currentLang];
       return `
-        <div class="intro-poster relative h-screen fade-in flex flex-col justify-between p-6 pb-24 bg-white select-none overflow-hidden">
+        <div class="intro-poster relative h-screen fade-in flex flex-col justify-between p-6 pb-36 bg-white select-none overflow-hidden">
           
           <div class="flex justify-end items-center pt-1">
             <div class="flex items-center text-[9px] font-mono border border-zinc-300 rounded-full p-0.5 bg-zinc-50">
@@ -790,8 +785,7 @@
             </div>
           </div>
 
-          <!-- 文字全体のバランスを少しコンパクトに上へ寄せる -->
-          <div class="my-auto space-y-2 md:space-y-4 py-1 flex flex-col items-center">
+          <div class="my-auto space-y-1.5 md:space-y-3 py-1 flex flex-col items-center">
             
             <div class="poster-row">
               <span class="poster-char">${t.posterLine1[0]}</span>
@@ -823,8 +817,8 @@
 
           </div>
 
-          <!-- スタートボタン位置向上（pb-24/mb-6 でスマホのSafariボトムバーの上に確実に配置） -->
-          <div class="w-full mb-8 flex justify-center">
+          <!-- スタートボタン位置をSafariボトムバーからかなり離して上に配置 (mb-16 / pb-8) -->
+          <div class="w-full mb-16 flex justify-center">
             <button id="btn-start-app" class="w-14 h-14 bg-black text-white font-bold text-xl rounded-full hover:bg-zinc-800 hover:scale-105 active:scale-95 transition-all flex items-center justify-center">
               <span>→</span>
             </button>
@@ -834,12 +828,12 @@
       `;
     }
 
-    // --- STEP 1: 自分の感情設定（矢印ボタン位置向上） ---
+    // --- STEP 1: 自分の感情設定 (矢印ボタン位置向上 mb-16) ---
     function renderStep1VibeCheck() {
       const t = i18n[currentLang];
       return `
-        <div class="flex-1 flex flex-col items-center justify-between h-screen pt-6 pb-20 px-4 fade-in overflow-hidden">
-          <div class="text-center mt-2 mb-1">
+        <div class="flex-1 flex flex-col items-center justify-between h-screen pt-6 pb-28 px-4 fade-in overflow-hidden">
+          <div class="text-center mt-1 mb-1">
             <h2 class="text-xl font-black tracking-tight text-black">
               ${t.step1Title}
             </h2>
@@ -878,8 +872,7 @@
             </div>
           </div>
 
-          <!-- 矢印ボタンの位置を少し上に（mb-6） -->
-          <div class="w-full flex justify-center mb-6">
+          <div class="w-full flex justify-center mb-12">
             <button id="btn-to-burn-step" class="w-14 h-14 bg-black text-white text-xl font-bold rounded-full hover:bg-zinc-800 hover:scale-105 active:scale-95 transition-all flex items-center justify-center">
               <span>→</span>
             </button>
@@ -888,12 +881,12 @@
       `;
     }
 
-    // --- STEP 2: 焚き上げたいこと（🔥ボタン位置向上） ---
+    // --- STEP 2: 焚き上げたいこと (🔥ボタン位置向上 mb-16) ---
     function renderStep2SoloBurn() {
       const t = i18n[currentLang];
       return `
-        <div class="flex-1 flex flex-col justify-between h-screen pt-6 pb-20 px-4 fade-in overflow-hidden">
-          <div class="text-center mt-2 mb-1">
+        <div class="flex-1 flex flex-col justify-between h-screen pt-6 pb-28 px-4 fade-in overflow-hidden">
+          <div class="text-center mt-1 mb-1">
             <h2 class="text-xl font-black tracking-tight text-black">
               ${t.step2Title}
             </h2>
@@ -943,8 +936,7 @@
             </div>
           </div>
 
-          <!-- 🔥ボタンの位置を少し上に（mb-6） -->
-          <div class="w-full flex justify-center mb-6">
+          <div class="w-full flex justify-center mb-12">
             <button
               id="btn-execute-burn"
               class="w-14 h-14 bg-black text-white text-2xl font-bold rounded-full hover:bg-zinc-800 hover:scale-105 active:scale-95 transition-all flex items-center justify-center cursor-pointer"
