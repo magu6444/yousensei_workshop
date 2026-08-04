@@ -186,7 +186,7 @@
       background-color: #000000;
       border-radius: 20px;
       z-index: 9999;
-      display: none; /* デフォルト完全非表示 */
+      display: none;
       align-items: center;
       justify-content: center;
       color: #ffffff;
@@ -222,7 +222,7 @@
 </head>
 <body class="bg-white text-paper-dark min-h-screen flex flex-col antialiased">
 
-  <!-- 画面上部ダイナミックアイランド（お焚き上げボタンアクション時のみ表示） -->
+  <!-- 画面上部ダイナミックアイランド -->
   <div id="dynamic-island-notch">
     <span id="island-status-text">🔥 焚き上げ中...</span>
   </div>
@@ -270,6 +270,44 @@
       }
     };
 
+    // --- ユーザー提供の口元・八重歯・リップフレーム画像（背景透過処理を自動実行） ---
+    let mouthFrameImg = null;
+
+    function initMouthFrameImage() {
+      const rawImg = new Image();
+      rawImg.src = 'images/mouth_frame_raw.png';
+      rawImg.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = rawImg.width;
+        canvas.height = rawImg.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(rawImg, 0, 0);
+
+        // 白背景（RGB > 220）を自動的に背景透過（アルファ=0）に変換
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imgData.data;
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i], g = data[i+1], b = data[i+2];
+          if (r > 220 && g > 220 && b > 220) {
+            data[i+3] = 0; // 完全透明
+          }
+        }
+        ctx.putImageData(imgData, 0, 0);
+
+        const transparentImg = new Image();
+        transparentImg.src = canvas.toDataURL('image/png');
+        transparentImg.onload = () => {
+          mouthFrameImg = transparentImg;
+          // 再描画
+          if (currentStep === 'vibe_check') {
+            const faceCanvas = document.getElementById('vibe-face-canvas');
+            if (faceCanvas) drawPolaApexMeshDistortedFace(faceCanvas, vibes, true, capturedPhotoImg || fallbackUserFaceImg);
+          }
+        };
+      };
+    }
+    initMouthFrameImage();
+
     // --- カメラ・自撮りテクスチャ ＆ 顔面ドアップ・5角形モザイク切り抜きプロセス ---
     let capturedPhotoImg = null;
 
@@ -282,7 +320,6 @@
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, 300, 300);
 
-      // 人肌ベース
       const skinGrad = ctx.createRadialGradient(150, 150, 20, 150, 150, 140);
       skinGrad.addColorStop(0, '#FFE4D6');
       skinGrad.addColorStop(0.7, '#F7D0BC');
@@ -292,12 +329,10 @@
       ctx.arc(150, 150, 140, 0, Math.PI * 2);
       ctx.fill();
 
-      // 眉
       ctx.strokeStyle = '#3A2E2B'; ctx.lineWidth = 5; ctx.lineCap = 'round';
       ctx.beginPath(); ctx.moveTo(85, 105); ctx.quadraticCurveTo(115, 95, 140, 108); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(160, 108); ctx.quadraticCurveTo(185, 95, 215, 105); ctx.stroke();
 
-      // 目
       ctx.fillStyle = '#1F1A17';
       ctx.beginPath(); ctx.ellipse(110, 135, 18, 11, 0, 0, Math.PI * 2); ctx.fill();
       ctx.beginPath(); ctx.ellipse(190, 135, 18, 11, 0, 0, Math.PI * 2); ctx.fill();
@@ -305,11 +340,9 @@
       ctx.beginPath(); ctx.arc(114, 132, 5, 0, Math.PI * 2); ctx.fill();
       ctx.beginPath(); ctx.arc(194, 132, 5, 0, Math.PI * 2); ctx.fill();
 
-      // 鼻
       ctx.strokeStyle = '#D49E85'; ctx.lineWidth = 4;
       ctx.beginPath(); ctx.moveTo(150, 135); ctx.lineTo(145, 175); ctx.lineTo(155, 178); ctx.stroke();
 
-      // 口
       ctx.strokeStyle = '#C96F68'; ctx.lineWidth = 5;
       ctx.beginPath(); ctx.arc(150, 205, 22, 0.1, Math.PI - 0.1); ctx.stroke();
 
@@ -349,14 +382,12 @@
       }
     }
 
-    // 【プロセス】写真を撮る ▶︎ 顔をドアップにする ▶︎ 顔面をきれいな5角形に切り抜く ▶︎ 軽くスタイリッシュなモザイクをかける
     function captureProcessFacePhoto(video) {
       const canvas = document.getElementById('captured-photo-canvas');
       if (!canvas || !video) return;
       const rawW = video.videoWidth || 300;
       const rawH = video.videoHeight || 300;
 
-      // 1. 顔をドアップにズームクロップ
       const cropW = rawW * 0.5;
       const cropH = rawH * 0.5;
       const cropX = (rawW - cropW) / 2;
@@ -366,7 +397,6 @@
       canvas.height = 300;
       const ctx = canvas.getContext('2d');
 
-      // 一時描画Canvas
       const tempCanvas = document.createElement('canvas');
       tempCanvas.width = 300;
       tempCanvas.height = 300;
@@ -376,7 +406,6 @@
       tempCtx.scale(-1, 1);
       tempCtx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, 300, 300);
 
-      // 2. 綺麗な正5角形パスで切り抜き
       ctx.save();
       ctx.beginPath();
       const angles = [
@@ -394,17 +423,16 @@
         else ctx.lineTo(x, y);
       });
       ctx.closePath();
-      ctx.clip(); // 欠けのない完全な5角形切り抜き
+      ctx.clip();
 
-      // 3. 軽いスタイリッシュモザイク（解像度縮小描画 ▶ 拡大）
-      const mosaicSize = 36; // 軽めのピクセルモザイクサイズ
+      const mosaicSize = 36;
       const mosaicCanvas = document.createElement('canvas');
       mosaicCanvas.width = mosaicSize;
       mosaicCanvas.height = mosaicSize;
       const mosaicCtx = mosaicCanvas.getContext('2d');
       mosaicCtx.drawImage(tempCanvas, 0, 0, mosaicSize, mosaicSize);
 
-      ctx.imageSmoothingEnabled = false; // ピクセルモザイク感を保持
+      ctx.imageSmoothingEnabled = false;
       ctx.drawImage(mosaicCanvas, 0, 0, 300, 300);
       ctx.restore();
 
@@ -613,7 +641,7 @@
       ashWeight: '1.4kg'
     };
 
-    // --- 【薄灰色の同心5角形・放射線ガイド線を顔の上に配置】 ---
+    // --- POLA APEXメッシュ変形描画 ＋ ユーザー提供口元リップフレーム重ね描画 ---
     function drawPolaApexMeshDistortedFace(canvas, vibesData, showMetrics = true, customPhotoImg = null) {
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
@@ -671,8 +699,16 @@
         }
       }
 
-      // 2. 【レイヤー順序変更】「薄い灰色の5角形＆放射線ガイド線」を顔写真の上に描画！
-      // 円ではなく同心5角形ガイド線を描画
+      // 2. 「ユーザー提供口元・八重歯リップフレーム」をプラットフォームのフレーム枠として最前面に重ね描画
+      if (mouthFrameImg && mouthFrameImg.complete && showMetrics) {
+        ctx.save();
+        const frameW = width * 1.15;
+        const frameH = height * 1.15;
+        ctx.drawImage(mouthFrameImg, cx - frameW / 2, cy - frameH / 2 + 5, frameW, frameH);
+        ctx.restore();
+      }
+
+      // 3. 同心5角形ガイド線
       ctx.strokeStyle = '#EBEBEF';
       ctx.lineWidth = 1;
       [0.25, 0.5, 0.75, 1.0].forEach(rScale => {
@@ -1181,7 +1217,6 @@
 
       soundEngine.playSoftBurn();
 
-      // ボタン/スワイプアクション時のみノッチを拡大表示
       card.classList.add('dynamic-island-absorb');
       notch.classList.add('expanding');
 
