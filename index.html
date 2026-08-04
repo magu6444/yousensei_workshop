@@ -242,53 +242,98 @@
       }
     };
 
-    // --- ネット掲示板・SNSリアル炎上風コメント・アカウントデータベース ---
+    // --- 拡張ユーザーアカウント名データベース (豊富なバリエーション) ---
     const viralUserNames = [
       { name: '名無しさん@お腹いっぱい', handle: '@nanashi_2ch' },
       { name: '裏アカウント@拡散希望', handle: '@ura_kakukan' },
       { name: '通りすがりの特定班', handle: '@tokutei_expert' },
       { name: '社会の底辺から', handle: '@sub_account_99' },
-      { name: '知恵袋回答者', handle: '@chiebukuro_master' },
-      { name: '物申す人', handle: '@monomosu_man' },
-      { name: '匿名希望', handle: '@tokumei_0921' },
-      { name: '激辛レビュアー', handle: '@gekikara_sub' },
-      { name: 'ウォッチ民', handle: '@watch_subscriber' },
-      { name: '炎上まとめ速報', handle: '@enjo_news_matome' }
+      { name: '知恵袋回答者A', handle: '@chiebukuro_master' },
+      { name: '物申すマン', handle: '@monomosu_man' },
+      { name: '匿名希望の社畜', handle: '@shachiku_0921' },
+      { name: '激辛ウォッチ民', handle: '@gekikara_sub' },
+      { name: '爆破予告監視員', handle: '@watch_subscriber' },
+      { name: '炎上速報Bot', handle: '@enjo_news_matome' },
+      { name: '令和の毒舌王', handle: '@dokuzetsu_reiwa' },
+      { name: 'ネット晒しあげ特命部', handle: '@sarashi_special' },
+      { name: '限界派遣OL', handle: '@genkai_ol_sub' },
+      { name: '深夜の愚痴吐きbot', handle: '@guchi_night' },
+      { name: '元人事の裏話', handle: '@jinji_urabana' },
+      { name: '愚痴まとめアンテナ', handle: '@matome_antenna' },
+      { name: '理不尽絶対に許さないマン', handle: '@fuhai_hunter' },
+      { name: '令和の知恵袋民', handle: '@chiebukuro_2026' }
     ];
 
-    const viralRepliesPool = [
-      'こいつ最低だろ…まじで引くわ',
-      'みんな拡散して特定しようぜｗｗｗ',
-      '関係者はどう思ってんだ？責任取れよ',
-      'はい炎上決定〜ｗｗｗ',
-      'こういう奴が一番害悪なんだよな',
-      '特定班仕事早くて草',
-      '会社どこ？特定求む',
-      'こんなの許されるわけないだろ。拡散拡散！',
-      '完全にアウト。社会的に終わったな',
-      'これ見た人全員リポストして世界に晒そうぜ',
-      '言い訳苦しすぎて草生えるわ',
-      '被害者の気持ち考えたことある？マジで無理',
-      'まとめサイトに載ってて見に来ましたｗｗｗ',
-      '謝罪文まだ〜？？？'
-    ];
+    // --- 投稿内容キーワード連動「共感型炎上・合同批判」AIコメント生成ロジック ---
+    function generateContextualSympatheticEnjoReplies(userText) {
+      const lower = userText.toLowerCase();
+      
+      // キーワード判定
+      const isWork = lower.includes('上司') || lower.includes('仕事') || lower.includes('会社') || lower.includes('残業') || lower.includes('営業') || lower.includes('コード') || lower.includes('チャット');
+      const isRelationship = lower.includes('友達') || lower.includes('彼女') || lower.includes('彼氏') || lower.includes('元カノ') || lower.includes('LINE') || lower.includes('マウント') || lower.includes('SNS');
+      const isUnfair = lower.includes('理不尽') || lower.includes('指示') || lower.includes('丸投げ') || lower.includes('態度') || lower.includes('電車') || lower.includes('人間');
 
-    function getRandomEnjoReplies(count = 5) {
+      let replyPool = [];
+
+      if (isWork) {
+        replyPool = [
+          'その上司マジで胸糞すぎるだろ…完全にハラスメントで特定して晒されるレベル。',
+          '休日の連絡は労働基準法違反だろ。会社名と上司の部署マジで晒してほしいレベルで腹立つな。',
+          'わかりすぎる…自分の都合しか考えてない老害上司多すぎて全員消えてほしい。',
+          'こいつマジで最低だな。頼むからSNSで拡散されて痛い目見てほしい。投稿者さん応援するわ。',
+          '関係者はこの上司の暴挙どう思ってんだよ？労基に通報して炎上させてやろうぜ！',
+          '「簡単な仕事」って言う奴に限って自分じゃ何もできない無能営業あるあるｗｗｗ痛い目みろ！',
+          'これ会社特定して口コミに「休日ハラスメント横行」って書かれるべきだろ。全員拡散しようぜ。'
+        ];
+      } else if (isRelationship) {
+        replyPool = [
+          '匂わせ投稿する奴もマウント取ってくる奴も人間性腐ってて引くわ…全員晒されろ。',
+          '裏でコソコソマウント取ってくる奴が一番害悪！みんなで拡散して居場所無くしてやろうぜ。',
+          'マジで腹立つなこれ！投稿者さんが優しすぎるだけだよ。相手の自意識過剰ぶりが痛すぎる。',
+          'こいつ最低だろ…元カノも現カレもまとめて炎上して痛い目に遭えばいいのに。',
+          '自分の非を認めずにマウント取る奴、まじで全員ネットの海に沈んで二度と浮上してくるな。',
+          '共感しかない。こういう性根腐った奴は一回まとめサイトで大炎上して反省しろ！'
+        ];
+      } else if (isUnfair) {
+        replyPool = [
+          'マジで理不尽すぎて読んでるこっちまでブチ切れたわ！こんな奴が野放しなの絶対おかしい。',
+          'こいつ最低すぎるだろ…世の中理不尽な奴多すぎて全員炎上して社会的に終わってほしい。',
+          '投稿者さん何も悪くないのに！こんな身勝手な奴、特定班に特定されて拡散されればいい。',
+          '関係者はどう思ってんだよ？理不尽な行動取った奴は実名で晒されて反省しろ。',
+          'わかる…怒りで手が震えるレベル。全員で大拡散してこの理不尽さを世の中に知らしめようぜ！',
+          '完全に投稿者さんに同意。理不尽な目にあわせた奴、全員バチ当たって炎上しますように🙏'
+        ];
+      } else {
+        replyPool = [
+          '投稿者さんの言ってること100%正しい！こんな理不尽な奴まじで最低だろ…',
+          '胸糞わるすぎる！みんなで大拡散してこの胸糞案件をネット全体で炎上させようぜ。',
+          '関係者はどう思ってんだ？当事者出てきて謝罪しろよ！晒されて当たり前のレベル。',
+          'これ見た人全員拡散して！こんなのが許される社会であっちゃいけないだろ。',
+          '投稿者さんの怒りごもっとも。理不尽な奴は徹底的に叩かれて当然！',
+          'マジで共感しかない。相手の無神経さに吐き気がするわ。炎上して社会的制裁受けろ。'
+        ];
+      }
+
+      // ランダムに5〜7件のアカウントとコメントを生成
       let result = [];
+      const count = Math.floor(Math.random() * 3) + 5;
+      const shuffledUsers = [...viralUserNames].sort(() => 0.5 - Math.random());
+
       for (let i = 0; i < count; i++) {
-        const u = viralUserNames[Math.floor(Math.random() * viralUserNames.length)];
-        const text = viralRepliesPool[Math.floor(Math.random() * viralRepliesPool.length)];
+        const u = shuffledUsers[i % shuffledUsers.length];
+        const text = replyPool[i % replyPool.length];
         result.push({
           name: u.name,
-          handle: `${u.handle}_${Math.floor(Math.random()*90+10)}`,
+          handle: `${u.handle}_${Math.floor(Math.random() * 90 + 10)}`,
           text: text
         });
       }
+
       return result;
     }
 
     // --- アプリケーション状態 ---
-    let currentStep = 'intro'; // 'intro' | 'vibe_check' | 'solo_burn' | 'chaos_gallery' | 'profile'
+    let currentStep = 'intro';
     let selectedPostModal = null;
 
     let vibes = {
@@ -303,69 +348,79 @@
     let categoryTags = ['#仕事', '#人間関係', '#恋愛', '#自分', '#理不尽', '#社会'];
     let selectedTags = ['#仕事'];
 
-    // 初期投稿
+    // 初期投稿（多種多様なバリエーション投稿）
     let posts = [
       {
         id: 'post-1',
         userName: '名無しさん@お腹いっぱい',
-        userId: '@anon_ura_99',
+        userId: '@nanashi_2ch_01',
         dateStr: '10分前',
         text: '休日にチャット送ってくる上司、頼むからスマホが海に沈んで一生起動しなくなってほしい。休日の静寂を返せ。',
         authorVibe: { anger: 90, sadness: 20, unfairness: 85, envy: 10, void: 40 },
         gasshoCount: 142,
         tag: '#仕事 #人間関係',
-        replies: getRandomEnjoReplies(6)
+        replies: generateContextualSympatheticEnjoReplies('休日にチャット送ってくる上司、頼むからスマホが海に沈んで一生起動しなくなってほしい。休日の静寂を返せ。')
       },
       {
         id: 'post-2',
         userName: '裏アカウント@拡散希望',
-        userId: '@ura_kakukan',
+        userId: '@ura_kakukan_88',
         dateStr: '25分前',
         text: 'SNSで匂わせ投稿を繰り返す元カノ、服装が絶妙にダサい現カレとの写真を見て妙に安心している自分が情けない。',
         authorVibe: { anger: 50, sadness: 70, unfairness: 40, envy: 95, void: 30 },
         gasshoCount: 289,
         tag: '#恋愛 #執着',
-        replies: getRandomEnjoReplies(5)
+        replies: generateContextualSympatheticEnjoReplies('SNSで匂わせ投稿を繰り返す元カノ、服装が絶妙にダサい現カレとの写真を見て妙に安心している自分が情けない。')
       },
       {
         id: 'post-3',
-        userName: '通りすがりの特定班',
-        userId: '@tokutei_expert',
-        dateStr: '1時間前',
+        userName: '限界派遣OL',
+        userId: '@genkai_ol_sub',
+        dateStr: '45分前',
         text: '「これ簡単な仕事だからさ〜」と軽いノリで丸投げしてきた営業マン。じゃあ今すぐこのコード書いてみてくださいよ。',
         authorVibe: { anger: 95, sadness: 30, unfairness: 100, envy: 15, void: 20 },
         gasshoCount: 512,
         tag: '#仕事 #理不尽',
-        replies: getRandomEnjoReplies(7)
+        replies: generateContextualSympatheticEnjoReplies('「これ簡単な仕事だからさ〜」と軽いノリで丸投げしてきた営業マン。じゃあ今すぐこのコード書いてみてくださいよ。')
       },
       {
         id: 'post-4',
-        userName: '社会の底辺から',
-        userId: '@sub_account_99',
-        dateStr: '2時間前',
+        userName: '通りすがりの特定班',
+        userId: '@tokutei_expert_09',
+        dateStr: '1時間前',
         text: '自分は超サバサバ系って自称している人に限って、裏で人の顔色を窺い巧妙にマウントを取ってくる現象は何なんだ。',
         authorVibe: { anger: 60, sadness: 40, unfairness: 70, envy: 30, void: 90 },
         gasshoCount: 98,
         tag: '#人間関係',
-        replies: getRandomEnjoReplies(4)
+        replies: generateContextualSympatheticEnjoReplies('自分は超サバサバ系って自称している人に限って、裏で人の顔色を窺い巧妙にマウントを取ってくる現象は何なんだ。')
       },
       {
         id: 'post-5',
-        userName: '知恵袋回答者',
-        userId: '@chiebukuro_master',
-        dateStr: '4時間前',
+        userName: '令和の知恵袋民',
+        userId: '@chiebukuro_2026',
+        dateStr: '2時間前',
         text: '努力は報われるって言葉、報われた奴しか言ってない。今日も何も解決しないまま夜が更けていく。',
         authorVibe: { anger: 20, sadness: 95, unfairness: 75, envy: 40, void: 80 },
         gasshoCount: 341,
         tag: '#自分 #社会',
-        replies: getRandomEnjoReplies(6)
+        replies: generateContextualSympatheticEnjoReplies('努力は報われるって言葉、報われた奴しか言ってない。今日も何も解決しないまま夜が更けていく。')
+      },
+      {
+        id: 'post-6',
+        userName: '理不尽絶対に許さないマン',
+        userId: '@fuhai_hunter_99',
+        dateStr: '3時間前',
+        text: '満員電車でリュック降ろさずに肘ぶつけてくるやつ、全員靴紐がほどけて転びますように。',
+        authorVibe: { anger: 85, sadness: 10, unfairness: 90, envy: 20, void: 50 },
+        gasshoCount: 176,
+        tag: '#社会 #理不尽',
+        replies: generateContextualSympatheticEnjoReplies('満員電車でリュック降ろさずに肘ぶつけてくるやつ、全員靴紐がほどけて転びますように。')
       }
     ];
 
-    // 無限スクロール用
-    let postIndexCount = 6;
+    // 無限スクロール用サンプル
+    let postIndexCount = 7;
     const pastRantSamples = [
-      '満員電車でリュック降ろさずに肘ぶつけてくるやつ、全員靴紐がほどけて転びますように。',
       '「前の担当者はやってくれたんだけどな〜」とか言ってくるクライアント、じゃあその前担当に頼めや。',
       '友達のSNS報告に「おめでとう！」ってコメントしながら、心のどこかで嫉妬してる自分が一番嫌い。',
       '「残業するのが偉い」風潮の残る職場、定時退社する私を見る目線が冷たすぎて草も生えない。',
@@ -394,7 +449,7 @@
           },
           gasshoCount: Math.floor(Math.random() * 200 + 10),
           tag: tag1,
-          replies: getRandomEnjoReplies(Math.floor(Math.random() * 5 + 3))
+          replies: generateContextualSympatheticEnjoReplies(sampleText)
         });
         postIndexCount++;
       }
@@ -586,7 +641,7 @@
           ${currentStep === 'profile' ? renderProfileView() : ''}
         </main>
 
-        <!-- ポスト詳細モーダル (炎上コメントレスキュー) -->
+        <!-- ポスト詳細モーダル (共感型合同批判コメント) -->
         ${selectedPostModal ? renderPostDetailModal() : ''}
 
         <!-- スマホ用ボトムタブ（文字なし！掲示板マーク📋 ＆ 人型マーク👤） -->
@@ -826,7 +881,7 @@
       `;
     }
 
-    // --- STEP 3: みんなのお焚き上げ ---
+    // --- STEP 3: みんなのお焚き上げ (💬マーク＋数値のみの返信枠) ---
     function renderStep3ChaosGallery() {
       const t = i18n[currentLang];
       return `
@@ -862,13 +917,13 @@
                     ${post.tag}
                   </div>
 
+                  <!-- 💬（リプライ吹き出しマーク）＋数値のみの通常スタイルの返信枠 -->
                   <div class="flex items-center justify-between text-zinc-500 text-xs max-w-xs pt-1">
                     <div class="flex items-center gap-1.5 hover:text-black transition-colors">
-                      <svg class="w-4 h-4 text-red-500 fill-red-500" viewBox="0 0 24 24">
-                        <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                        <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
                       </svg>
-                      <span class="text-[11px] font-bold text-red-600">${post.replies ? post.replies.length : 0} 炎上レス</span>
+                      <span class="text-[11px] font-mono">${post.replies ? post.replies.length : 0}</span>
                     </div>
 
                     <button data-postid="${post.id}" class="btn-gassho flex items-center gap-1.5 hover:text-red-500 transition-colors">
@@ -884,7 +939,7 @@
       `;
     }
 
-    // --- ポストタップ時の大量リアル炎上コメント表示モーダル ---
+    // --- ポストタップ時の共感＆合同批判コメント表示モーダル ---
     function renderPostDetailModal() {
       const p = selectedPostModal;
       return `
@@ -893,8 +948,8 @@
             <div>
               <div class="flex justify-between items-center pb-3 border-b border-paper-border mb-4">
                 <div class="flex items-center gap-2">
-                  <span class="text-xs font-black text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">🔥 炎上中レスキュー</span>
-                  <span class="text-[10px] text-zinc-400 font-mono">${p.replies ? p.replies.length : 0} コメント</span>
+                  <span class="text-xs font-black text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">🔥 合同批判・炎上レス</span>
+                  <span class="text-[10px] text-zinc-400 font-mono">${p.replies ? p.replies.length : 0} 件</span>
                 </div>
                 <button id="btn-close-modal" class="text-zinc-500 font-bold text-lg px-2 hover:text-black">✕</button>
               </div>
@@ -914,9 +969,9 @@
                 </div>
               </div>
 
-              <!-- ネット掲示板・裏垢風炎上レス一覧 -->
+              <!-- 投稿内容にしっかり共感・合同批判するリアルコメント -->
               <div class="border-t border-paper-border pt-3">
-                <h4 class="text-xs font-black text-black mb-3">🔥 タイムラインの反応・レスポンス</h4>
+                <h4 class="text-xs font-black text-black mb-3">🔥 投稿内容への共感＆合同批判レスポンス</h4>
                 
                 <div class="space-y-2.5">
                   ${p.replies && p.replies.map(r => `
@@ -1216,7 +1271,7 @@
         };
       }
 
-      // STEP 2 -> STEP 3 (自分の投稿即時大量炎上レス生成)
+      // STEP 2 -> STEP 3 (ユーザーの投稿内容にダイレクトに連動した共感＆合同批判コメントが生成される)
       const executeBurnBtn = document.getElementById('btn-execute-burn');
       if (executeBurnBtn) {
         executeBurnBtn.onclick = () => {
@@ -1225,17 +1280,8 @@
           if (!val) return;
 
           triggerRealisticFireTransition(() => {
-            // 自分の投稿直後に即座に大量のリアル炎上レス（8〜10件）がぶら下がる
-            const instantEnjoReplies = [
-              { name: '裏アカウント@拡散希望', handle: '@ura_kakukan_01', text: 'こいつ最低だな。拡散します。' },
-              { name: '名無しさん@お腹いっぱい', handle: '@nanashi_2ch_99', text: '完全に燃えてて草。反省してなさそう' },
-              { name: '通りすがりの特定班', handle: '@tokutei_expert', text: '関係者はどう思ってるんだ？責任取れよ' },
-              { name: '物申す人', handle: '@monomosu_man', text: 'これマジで言ってる？人としてあり得ないだろ' },
-              { name: '激辛レビュアー', handle: '@gekikara_sub', text: '特定班仕事早くて草。まとめサイト載るなこれ' },
-              { name: '知恵袋回答者', handle: '@chiebukuro_master', text: '社会的にアウト。全員で晒していこうぜｗｗｗ' },
-              { name: 'ウォッチ民', handle: '@watch_sub', text: '即炎上しててワロタｗｗｗｗｗｗ' },
-              { name: '炎上まとめ速報', handle: '@enjo_news', text: '【速報】またヤバい投稿が発見されるｗｗｗ' }
-            ];
+            // 投稿本文に文脈連動して「共感＋ターゲットへの合同批判」レスポンスを即座に自動生成
+            const instantReplies = generateContextualSympatheticEnjoReplies(val);
 
             posts.unshift({
               id: `post-${Date.now()}`,
@@ -1246,7 +1292,7 @@
               authorVibe: { ...vibes },
               gasshoCount: 1,
               tag: selectedTags.join(' '),
-              replies: instantEnjoReplies
+              replies: instantReplies
             });
 
             burnStats.totalBurned += 1;
@@ -1258,7 +1304,7 @@
         };
       }
 
-      // ポストタップで炎上モーダルを開く
+      // ポストタップで共感・合同批判モーダルを開く
       document.querySelectorAll('.post-item-card').forEach(card => {
         card.onclick = (e) => {
           if (e.target.closest('.btn-gassho')) return;
