@@ -70,43 +70,51 @@
       overflow: hidden;
     }
 
-    .poster-row {
+    /* ポスタータイトルの縦列ピタリ整列 ＆ ゆったり行間スペース */
+    .poster-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      row-gap: 1.2rem; /* 行間をもっとゆったり確保 */
+      column-gap: 0.5rem;
+      width: 100%;
+      max-width: 340px;
+      margin: 0 auto;
+    }
+
+    .poster-cell {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      width: 100%;
-      line-height: 1.0;
+      justify-content: center;
+      aspect-ratio: 1;
     }
 
     .poster-char {
       font-weight: 900 !important;
-      font-size: 11.5vw;
+      font-size: 11vw;
       color: #111111;
       font-family: 'Noto Sans', 'Noto Sans JP', sans-serif;
-      font-style: normal;
-      display: inline-block;
+      line-height: 1;
       text-align: center;
-      width: 1.2em;
     }
 
     @media (min-width: 500px) {
       .poster-char {
-        font-size: 3.5rem;
+        font-size: 3.4rem;
       }
     }
 
     .poster-emoji {
-      font-size: 9.5vw;
+      font-size: 9vw;
       line-height: 1;
-      transform: scale(1.1);
-      display: inline-block;
       text-align: center;
-      width: 1.2em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     @media (min-width: 500px) {
       .poster-emoji {
-        font-size: 3.0rem;
+        font-size: 2.8rem;
       }
     }
 
@@ -167,7 +175,7 @@
       }
     }
 
-    /* スマホ疑似ダイナミックアイランド通知バー */
+    /* スマホ疑似ダイナミックアイランド通知バー（デフォルトは完全非表示） */
     #dynamic-island-notch {
       position: fixed;
       top: max(8px, env(safe-area-inset-top));
@@ -213,7 +221,7 @@
 </head>
 <body class="bg-white text-paper-dark min-h-screen flex flex-col antialiased">
 
-  <!-- 画面上部ダイナミックアイランド・ノッチ -->
+  <!-- 画面上部ダイナミックアイランド（スワイプお焚き上げ時のみ出現） -->
   <div id="dynamic-island-notch" class="hidden">
     <span id="island-status-text">🔥 焚き上げ中...</span>
   </div>
@@ -272,7 +280,6 @@
 
       ctx.clearRect(0, 0, 300, 300);
 
-      // 顔面パーツのみ（背景ゼロ）
       const skinGrad = ctx.createRadialGradient(150, 150, 20, 150, 150, 140);
       skinGrad.addColorStop(0, '#FFE4D6');
       skinGrad.addColorStop(0.7, '#F7D0BC');
@@ -282,12 +289,10 @@
       ctx.arc(150, 150, 135, 0, Math.PI * 2);
       ctx.fill();
 
-      // 眉
       ctx.strokeStyle = '#3A2E2B'; ctx.lineWidth = 5; ctx.lineCap = 'round';
       ctx.beginPath(); ctx.moveTo(85, 105); ctx.quadraticCurveTo(115, 95, 140, 108); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(160, 108); ctx.quadraticCurveTo(185, 95, 215, 105); ctx.stroke();
 
-      // 目
       ctx.fillStyle = '#1F1A17';
       ctx.beginPath(); ctx.ellipse(110, 135, 18, 11, 0, 0, Math.PI * 2); ctx.fill();
       ctx.beginPath(); ctx.ellipse(190, 135, 18, 11, 0, 0, Math.PI * 2); ctx.fill();
@@ -295,11 +300,9 @@
       ctx.beginPath(); ctx.arc(114, 132, 5, 0, Math.PI * 2); ctx.fill();
       ctx.beginPath(); ctx.arc(194, 132, 5, 0, Math.PI * 2); ctx.fill();
 
-      // 鼻
       ctx.strokeStyle = '#D49E85'; ctx.lineWidth = 4;
       ctx.beginPath(); ctx.moveTo(150, 135); ctx.lineTo(145, 175); ctx.lineTo(155, 178); ctx.stroke();
 
-      // 口
       ctx.strokeStyle = '#C96F68'; ctx.lineWidth = 5;
       ctx.beginPath(); ctx.arc(150, 205, 22, 0.1, Math.PI - 0.1); ctx.stroke();
 
@@ -339,14 +342,12 @@
       }
     }
 
-    // 【最高精度】背景・服・髪の毛を排除し皮膚・顔パーツのみを高精度セグメンテーション抽出
     function captureAndIsolateFaceFromVideo(video) {
       const canvas = document.getElementById('captured-photo-canvas');
       if (!canvas || !video) return;
       const rawW = video.videoWidth || 300;
       const rawH = video.videoHeight || 300;
 
-      // 顔中心へ極限まで拡大クロップ
       const cropW = rawW * 0.55;
       const cropH = rawH * 0.55;
       const cropX = (rawW - cropW) / 2;
@@ -360,7 +361,6 @@
       ctx.scale(-1, 1);
       ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, 300, 300);
 
-      // 高精度HSV皮膚抽出マスク（髪・服・部屋の背景を透明アルファ化）
       const imgData = ctx.getImageData(0, 0, 300, 300);
       const data = imgData.data;
 
@@ -378,7 +378,6 @@
 
           const isSkinColor = (r > 60) && (g > 40) && (b > 20) && (r > g) && (r > b) && (Math.max(r, g, b) - Math.min(r, g, b) > 15);
 
-          // 顔中心周辺の皮膚以外（背景・服・端の黒髪）を完全にくり抜き透明化
           if (distSq > 1.0 || (!isSkinColor && distSq > 0.4)) {
             data[idx + 3] = 0;
           }
@@ -592,14 +591,14 @@
       ashWeight: '1.4kg'
     };
 
-    // --- 【薄灰色ガイド線を顔の下層へ配置＆5角形領域を少し上へ位置調整】 ---
+    // --- POLA APEXメッシュ変形描画 ---
     function drawPolaApexMeshDistortedFace(canvas, vibesData, showMetrics = true, customPhotoImg = null) {
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
       const width = canvas.width;
       const height = canvas.height;
       const cx = width / 2;
-      const cy = height / 2 - 10; // 5角形領域を少し上へ配置
+      const cy = height / 2 - 10;
 
       ctx.clearRect(0, 0, width, height);
       ctx.fillStyle = '#FFFFFF';
@@ -614,7 +613,6 @@
         -Math.PI / 2 + (Math.PI * 8 / 5)
       ];
 
-      // 【重要】まず先に「薄い灰色のガイド枠線」を描画（これで確実に顔写真の下に隠れます）
       ctx.strokeStyle = '#EBEBEF';
       ctx.lineWidth = 1;
       [0.25, 0.5, 0.75, 1.0].forEach(r => {
@@ -631,7 +629,6 @@
         ctx.stroke();
       });
 
-      // 0のときは中心点へ完全引き締め
       const anger = (vibesData.anger || 0) / 100;
       const sadness = (vibesData.sadness || 0) / 100;
       const unfairness = (vibesData.unfairness || 0) / 100;
@@ -648,7 +645,6 @@
 
       const activePhoto = customPhotoImg || capturedPhotoImg || fallbackUserFaceImg;
 
-      // ガイド線の上にかぶせるように変形顔テクスチャを描画
       if (activePhoto && activePhoto.complete) {
         const srcW = activePhoto.width || 300;
         const srcH = activePhoto.height || 300;
@@ -812,7 +808,7 @@
       }
     }
 
-    // --- STEP 0: ロード / オープニング画面 ---
+    // --- STEP 0: ロード / オープニング画面 (グリッドレイアウトで縦列完全整列 ＆ ゆったり行間) ---
     function renderStep0Intro() {
       const t = i18n[currentLang];
       return `
@@ -825,34 +821,34 @@
             </div>
           </div>
 
-          <div class="my-auto space-y-1 md:space-y-3 py-1 flex flex-col items-center">
-            <div class="poster-row">
-              <span class="poster-char">${t.posterLine1[0]}</span>
-              <span class="poster-char">${t.posterLine1[1]}</span>
-              <span class="poster-emoji">${t.posterLine1[2]}</span>
-              <span class="poster-char">${t.posterLine1[3]}</span>
+          <div class="my-auto py-2 w-full flex flex-col items-center justify-center">
+            
+            <div class="poster-grid">
+              <!-- 1行目: 本 日 😤 の -->
+              <div class="poster-cell"><span class="poster-char">${t.posterLine1[0]}</span></div>
+              <div class="poster-cell"><span class="poster-char">${t.posterLine1[1]}</span></div>
+              <div class="poster-cell"><span class="poster-emoji">${t.posterLine1[2]}</span></div>
+              <div class="poster-cell"><span class="poster-char">${t.posterLine1[3]}</span></div>
+
+              <!-- 2行目: お 💢 焚 き -->
+              <div class="poster-cell"><span class="poster-char">${t.posterLine2[0]}</span></div>
+              <div class="poster-cell"><span class="poster-emoji">${t.posterLine2[1]}</span></div>
+              <div class="poster-cell"><span class="poster-char">${t.posterLine2[2]}</span></div>
+              <div class="poster-cell"><span class="poster-char">${t.posterLine2[3]}</span></div>
+
+              <!-- 3行目: 上 げ 😡 ✊ -->
+              <div class="poster-cell"><span class="poster-cell"><span class="poster-char">${t.posterLine3[0]}</span></div>
+              <div class="poster-cell"><span class="poster-char">${t.posterLine3[1]}</span></div>
+              <div class="poster-cell"><span class="poster-emoji">${t.posterLine3[2]}</span></div>
+              <div class="poster-cell"><span class="poster-emoji">${t.posterLine3[3]}</span></div>
+
+              <!-- 4行目: 💥 タ イ ム -->
+              <div class="poster-cell"><span class="poster-emoji">${t.posterLine4[0]}</span></div>
+              <div class="poster-cell"><span class="poster-char">${t.posterLine4[1]}</span></div>
+              <div class="poster-cell"><span class="poster-char">${t.posterLine4[2]}</span></div>
+              <div class="poster-cell"><span class="poster-char">${t.posterLine4[3]}</span></div>
             </div>
 
-            <div class="poster-row">
-              <span class="poster-char">${t.posterLine2[0]}</span>
-              <span class="poster-emoji">${t.posterLine2[1]}</span>
-              <span class="poster-char">${t.posterLine2[2]}</span>
-              <span class="poster-char">${t.posterLine2[3]}</span>
-            </div>
-
-            <div class="poster-row">
-              <span class="poster-char">${t.posterLine3[0]}</span>
-              <span class="poster-char">${t.posterLine3[1]}</span>
-              <span class="poster-emoji">${t.posterLine3[2]}</span>
-              <span class="poster-emoji">${t.posterLine3[3]}</span>
-            </div>
-
-            <div class="poster-row">
-              <span class="poster-emoji">${t.posterLine4[0]}</span>
-              <span class="poster-char">${t.posterLine4[1]}</span>
-              <span class="poster-char">${t.posterLine4[2]}</span>
-              <span class="poster-char">${t.posterLine4[3]}</span>
-            </div>
           </div>
 
           <div class="w-full flex justify-center pb-2">
@@ -918,7 +914,7 @@
       `;
     }
 
-    // --- STEP 2: 焚き上げたいこと（ダイナミックアイランド吸い込み上スワイプ操作対応） ---
+    // --- STEP 2: 焚き上げたいこと ---
     function renderStep2SoloBurn() {
       const t = i18n[currentLang];
       return `
@@ -972,7 +968,6 @@
               </div>
             </div>
 
-            <!-- 上スワイプ誘導インジケーター -->
             <div class="text-center pt-2 pb-1 text-[10px] text-zinc-400 font-bold flex flex-col items-center gap-1 animate-pulse">
               <span>▲ 上へスワイプして格納 ▲</span>
             </div>
@@ -1147,7 +1142,7 @@
       `;
     }
 
-    // --- 【ダイナミックアイランド吸い込み＆格納アニメーション】 ---
+    // --- 【ダイナミックアイランド吸い込みアニメーション（スワイプ/ボタン時のみ発動）】 ---
     function triggerDynamicIslandAbsorbTransition(onComplete) {
       const card = document.getElementById('solo-burn-card');
       const notch = document.getElementById('dynamic-island-notch');
@@ -1159,7 +1154,7 @@
 
       soundEngine.playSoftBurn();
 
-      // カードを上部ノッチへ吸い込むアニメーション発動
+      // スワイプ時のみノッチをアニメーションで表示
       card.classList.add('dynamic-island-absorb');
       notch.classList.remove('hidden');
       notch.classList.add('expanding');
@@ -1245,7 +1240,6 @@
         };
       }
 
-      // 画面キーボード入力完了時にスクロール位置を完璧に元に戻す処理
       const rantArea = document.getElementById('rant-textarea');
       if (rantArea) {
         rantArea.oninput = (e) => {
@@ -1257,7 +1251,6 @@
         };
 
         rantArea.onblur = () => {
-          // キーボード閉じ時に画面位置をスクロールトップへ即時復元
           window.scrollTo(0, 0);
           document.body.scrollTop = 0;
         };
@@ -1295,7 +1288,7 @@
         };
       }
 
-      // 上スワイプによるダイナミックアイランド格納・お焚き上げ発動
+      // 上スワイプによるお焚き上げ発動
       const burnCard = document.getElementById('solo-burn-card');
       let touchStartY = 0;
       if (burnCard) {
@@ -1305,7 +1298,7 @@
         burnCard.ontouchmove = (e) => {
           const currentY = e.touches[0].clientY;
           const diffY = touchStartY - currentY;
-          if (diffY > 40) { // 上に40px以上スワイプしたら発動
+          if (diffY > 40) {
             const textarea = document.getElementById('rant-textarea');
             const val = textarea ? textarea.value.trim() : rantText.trim();
             if (!val) return;
