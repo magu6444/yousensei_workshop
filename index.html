@@ -174,12 +174,10 @@
       border-radius: 16px;
       padding: 18px 20px;
       box-shadow: 0 10px 24px -4px rgba(0, 0, 0, 0.06), 0 4px 10px -4px rgba(0, 0, 0, 0.03);
-      /* くっきり高精細レンダリング用3Dハードウェアアクセラレーション */
       backface-visibility: hidden;
       -webkit-backface-visibility: hidden;
       transform-style: preserve-3d;
       will-change: transform, opacity;
-      /* 滑らかで正確なスプリングイージング */
       transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease, box-shadow 0.3s ease;
       cursor: pointer;
       user-select: none;
@@ -203,22 +201,19 @@
       pointer-events: none;
     }
 
-    /* 【修正】スクロール位置に関わらず画面の絶対真中央にズレ・ぼやけゼロで高精細固定ポップアップ */
+    /* 【完璧中心フォーカス固定】画面の絶対中央へズレ・ぼやけゼロで完全固定 */
     .newspaper-stack-card.expanded-center {
       position: fixed !important;
       top: 50% !important;
       left: 50% !important;
-      margin-top: 0 !important;
-      margin-left: 0 !important;
-      /* 整数ピクセル変換によりボヤケを完全防止 */
-      transform: translate3d(-50%, -50%, 0) rotate(0deg) scale(1) !important;
+      margin: 0 !important;
+      transform: translate3d(-50%, -50%, 0) rotate(0deg) scale(1.05) !important;
       width: 90% !important;
       max-width: 340px !important;
       z-index: 300 !important;
       box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.35) !important;
     }
 
-    /* フォーカス時のクリアなバックドロップ */
     #stack-focus-backdrop {
       position: fixed;
       inset: 0;
@@ -1596,7 +1591,7 @@
         };
       }
 
-      // --- 【完全修正】位置ズレ＆ぼやけを根本解決したポップアップイベント ---
+      // --- 【確実な2段階タップ ＆ コメント即時反映処理】 ---
       document.querySelectorAll('.stack-post-card').forEach(card => {
         card.onclick = (e) => {
           e.stopPropagation();
@@ -1604,6 +1599,7 @@
           const targetId = card.dataset.postid;
           const targetIdx = parseInt(card.dataset.idx, 10);
 
+          // 2回目のタップ：すでに画面中央にフォーカス中なら投稿詳細モーダルを開く
           if (expandedCardId === targetId) {
             const post = posts.find(p => p.id === targetId);
             if (post) {
@@ -1613,6 +1609,7 @@
             return;
           }
 
+          // 1回目のタップ：画面の絶対中央へ拡大表示 ＋ 上下カードが左右へはける
           expandedCardId = targetId;
 
           const backdrop = document.getElementById('stack-focus-backdrop');
@@ -1710,6 +1707,7 @@
         };
       }
 
+      // --- 【確実なコメント即時反映】入力後送信でDOMへダイレクト挿入＋状態同期 ---
       const submitReplyBtn = document.getElementById('btn-submit-reply');
       if (submitReplyBtn && selectedPostModal) {
         const handleReplySubmit = () => {
