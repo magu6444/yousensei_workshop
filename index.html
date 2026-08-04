@@ -139,6 +139,61 @@
       cursor: pointer;
     }
 
+    /* 上スワイプでお焚き上げカードが吸い込まれるダイナミックアイランド風アニメーション */
+    .dynamic-island-absorb {
+      animation: absorbToIsland 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    @keyframes absorbToIsland {
+      0% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+        border-radius: 1rem;
+      }
+      40% {
+        transform: translateY(-40vh) scale(0.6);
+        opacity: 0.9;
+        border-radius: 2rem;
+      }
+      80% {
+        transform: translateY(-80vh) scale(0.15);
+        opacity: 0.8;
+        border-radius: 9999px;
+      }
+      100% {
+        transform: translateY(-95vh) scale(0.02);
+        opacity: 0;
+        border-radius: 9999px;
+      }
+    }
+
+    /* スマホ疑似ダイナミックアイランド通知バー */
+    #dynamic-island-notch {
+      position: fixed;
+      top: max(8px, env(safe-area-inset-top));
+      left: 50%;
+      transform: translateX(-50%);
+      width: 120px;
+      height: 32px;
+      background-color: #000000;
+      border-radius: 20px;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 700;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+    }
+
+    #dynamic-island-notch.expanding {
+      width: 240px;
+      height: 42px;
+      background-color: #111111;
+    }
+
     .fade-in {
       animation: fadeIn 0.3s ease forwards;
     }
@@ -158,14 +213,16 @@
 </head>
 <body class="bg-white text-paper-dark min-h-screen flex flex-col antialiased">
 
+  <!-- 画面上部ダイナミックアイランド・ノッチ -->
+  <div id="dynamic-island-notch" class="hidden">
+    <span id="island-status-text">🔥 焚き上げ中...</span>
+  </div>
+
   <div id="app-root" class="flex-1 flex flex-col min-h-screen relative w-full max-w-md mx-auto bg-white"></div>
 
   <!-- 非表示Webカメラ映像エレメント＆キャプチャCanvas -->
   <video id="webcam-video" autoplay playsinline class="hidden"></video>
   <canvas id="captured-photo-canvas" class="hidden"></canvas>
-
-  <!-- 全画面じわじわ燃える炎オーバーレイ Canvas -->
-  <canvas id="fire-canvas" class="fixed inset-0 z-50 pointer-events-none w-full h-full hidden"></canvas>
 
   <script>
     // --- サウンドエンジン ---
@@ -204,7 +261,7 @@
       }
     };
 
-    // --- カメラ・ドアップ自撮りテクスチャ & 高精度肌色・顔面クロップ抽出 ---
+    // --- カメラ・高精度皮膚・顔面パーツセグメンテーション抽出 ---
     let capturedPhotoImg = null;
 
     function createDefaultFaceTexture() {
@@ -213,25 +270,24 @@
       canvas.height = 300;
       const ctx = canvas.getContext('2d');
 
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillRect(0, 0, 300, 300);
+      ctx.clearRect(0, 0, 300, 300);
 
-      // ドアップのリアル顔面テクスチャ
+      // 顔面パーツのみ（背景ゼロ）
       const skinGrad = ctx.createRadialGradient(150, 150, 20, 150, 150, 140);
       skinGrad.addColorStop(0, '#FFE4D6');
       skinGrad.addColorStop(0.7, '#F7D0BC');
       skinGrad.addColorStop(1, '#EBB59D');
       ctx.fillStyle = skinGrad;
       ctx.beginPath();
-      ctx.arc(150, 150, 140, 0, Math.PI * 2);
+      ctx.arc(150, 150, 135, 0, Math.PI * 2);
       ctx.fill();
 
-      // 眉毛
+      // 眉
       ctx.strokeStyle = '#3A2E2B'; ctx.lineWidth = 5; ctx.lineCap = 'round';
       ctx.beginPath(); ctx.moveTo(85, 105); ctx.quadraticCurveTo(115, 95, 140, 108); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(160, 108); ctx.quadraticCurveTo(185, 95, 215, 105); ctx.stroke();
 
-      // ドアップの目
+      // 目
       ctx.fillStyle = '#1F1A17';
       ctx.beginPath(); ctx.ellipse(110, 135, 18, 11, 0, 0, Math.PI * 2); ctx.fill();
       ctx.beginPath(); ctx.ellipse(190, 135, 18, 11, 0, 0, Math.PI * 2); ctx.fill();
@@ -283,16 +339,16 @@
       }
     }
 
-    // ドアップで顔面（目・口・鼻）を中心に拡大クロップ
+    // 【最高精度】背景・服・髪の毛を排除し皮膚・顔パーツのみを高精度セグメンテーション抽出
     function captureAndIsolateFaceFromVideo(video) {
       const canvas = document.getElementById('captured-photo-canvas');
       if (!canvas || !video) return;
       const rawW = video.videoWidth || 300;
       const rawH = video.videoHeight || 300;
 
-      // 顔中心へ1.5倍ドアップズームクロップ
-      const cropW = rawW * 0.65;
-      const cropH = rawH * 0.65;
+      // 顔中心へ極限まで拡大クロップ
+      const cropW = rawW * 0.55;
+      const cropH = rawH * 0.55;
       const cropX = (rawW - cropW) / 2;
       const cropY = (rawH - cropH) / 2;
 
@@ -303,6 +359,33 @@
       ctx.translate(300, 0);
       ctx.scale(-1, 1);
       ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, 300, 300);
+
+      // 高精度HSV皮膚抽出マスク（髪・服・部屋の背景を透明アルファ化）
+      const imgData = ctx.getImageData(0, 0, 300, 300);
+      const data = imgData.data;
+
+      const cx = 150, cy = 150;
+      const rx = 110, ry = 130;
+
+      for (let y = 0; y < 300; y++) {
+        for (let x = 0; x < 300; x++) {
+          const idx = (y * 300 + x) * 4;
+          const r = data[idx], g = data[idx + 1], b = data[idx + 2];
+
+          const dx = (x - cx) / rx;
+          const dy = (y - cy) / ry;
+          const distSq = dx * dx + dy * dy;
+
+          const isSkinColor = (r > 60) && (g > 40) && (b > 20) && (r > g) && (r > b) && (Math.max(r, g, b) - Math.min(r, g, b) > 15);
+
+          // 顔中心周辺の皮膚以外（背景・服・端の黒髪）を完全にくり抜き透明化
+          if (distSq > 1.0 || (!isSkinColor && distSq > 0.4)) {
+            data[idx + 3] = 0;
+          }
+        }
+      }
+
+      ctx.putImageData(imgData, 0, 0);
 
       const img = new Image();
       img.src = canvas.toDataURL('image/png');
@@ -328,7 +411,7 @@
         envy: '嫉妬',
         void: '虚無',
         step2Title: '焚き上げたいこと',
-        step2Sub: '供養空間へ送られ 炎上させます',
+        step2Sub: '上へスワイプしてダイナミックアイランドへ焚き上げます',
         placeholderRant: '理不尽な指示、消化できないイライラ... ここに書いて手放してください。',
         hashtagLabel: 'ハッシュタグ',
         chaosTitle: 'みんなのお焚き上げ',
@@ -351,7 +434,7 @@
         envy: 'Envy',
         void: 'Void',
         step2Title: 'Things to Burn',
-        step2Sub: 'Sent to the archive and set ablaze',
+        step2Sub: 'Swipe up into Dynamic Island to burn',
         placeholderRant: 'Unfair words, lingering anger... Write & set them ablaze here.',
         hashtagLabel: 'Hashtags',
         chaosTitle: 'Public Archives',
@@ -509,29 +592,20 @@
       ashWeight: '1.4kg'
     };
 
-    // --- 【黒縁なし＆0のときは一番中心・ドアップ5角形メッシュ変形描画】 ---
+    // --- 【薄灰色ガイド線を顔の下層へ配置＆5角形領域を少し上へ位置調整】 ---
     function drawPolaApexMeshDistortedFace(canvas, vibesData, showMetrics = true, customPhotoImg = null) {
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
       const width = canvas.width;
       const height = canvas.height;
       const cx = width / 2;
-      const cy = height / 2;
+      const cy = height / 2 - 10; // 5角形領域を少し上へ配置
 
       ctx.clearRect(0, 0, width, height);
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, width, height);
 
-      // 背景の薄いガイド円
       const radiusMax = width * 0.38;
-      ctx.strokeStyle = '#EBEBEF';
-      ctx.lineWidth = 1;
-      [0.25, 0.5, 0.75, 1.0].forEach(r => {
-        ctx.beginPath();
-        ctx.arc(cx, cy, radiusMax * r, 0, Math.PI * 2);
-        ctx.stroke();
-      });
-
       const angles = [
         -Math.PI / 2,
         -Math.PI / 2 + (Math.PI * 2 / 5),
@@ -539,6 +613,15 @@
         -Math.PI / 2 + (Math.PI * 6 / 5),
         -Math.PI / 2 + (Math.PI * 8 / 5)
       ];
+
+      // 【重要】まず先に「薄い灰色のガイド枠線」を描画（これで確実に顔写真の下に隠れます）
+      ctx.strokeStyle = '#EBEBEF';
+      ctx.lineWidth = 1;
+      [0.25, 0.5, 0.75, 1.0].forEach(r => {
+        ctx.beginPath();
+        ctx.arc(cx, cy, radiusMax * r, 0, Math.PI * 2);
+        ctx.stroke();
+      });
 
       ctx.strokeStyle = '#F0F0F4';
       angles.forEach(a => {
@@ -548,8 +631,7 @@
         ctx.stroke();
       });
 
-      // スライダー値 0〜100 を 0.0（中心）〜1.0（最大外周）に完全マッピング
-      // 0 のときは完全に中心点（半径0 = 点）まで引き締まり「ぶよん」ともどりません
+      // 0のときは中心点へ完全引き締め
       const anger = (vibesData.anger || 0) / 100;
       const sadness = (vibesData.sadness || 0) / 100;
       const unfairness = (vibesData.unfairness || 0) / 100;
@@ -558,15 +640,15 @@
 
       const vibeValues = [anger, unfairness, voidVal, envy, sadness];
 
-      // 5角形の頂点（0のときは半径0で中心点になる）
       let poly5Points = angles.map((a, i) => {
         const v = vibeValues[i];
-        const r = radiusMax * v; // 0のときは0pxで完全中心
+        const r = radiusMax * v;
         return { x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r };
       });
 
       const activePhoto = customPhotoImg || capturedPhotoImg || fallbackUserFaceImg;
 
+      // ガイド線の上にかぶせるように変形顔テクスチャを描画
       if (activePhoto && activePhoto.complete) {
         const srcW = activePhoto.width || 300;
         const srcH = activePhoto.height || 300;
@@ -577,7 +659,6 @@
           y: srcCenter.y + Math.sin(a) * (srcH * 0.46)
         }));
 
-        // 黒縁は無し（ご要望通り黒縁枠線の描き込みを削除）
         for (let i = 0; i < 5; i++) {
           const next = (i + 1) % 5;
           const sTriangle = [srcCenter, src5Points[i], src5Points[next]];
@@ -837,7 +918,7 @@
       `;
     }
 
-    // --- STEP 2: 焚き上げたいこと ---
+    // --- STEP 2: 焚き上げたいこと（ダイナミックアイランド吸い込み上スワイプ操作対応） ---
     function renderStep2SoloBurn() {
       const t = i18n[currentLang];
       return `
@@ -851,7 +932,7 @@
             </p>
           </div>
 
-          <div id="solo-burn-card" class="bg-white relative overflow-hidden max-w-[90%] mx-auto w-full my-auto">
+          <div id="solo-burn-card" class="bg-white relative overflow-hidden max-w-[90%] mx-auto w-full my-auto touch-pan-y cursor-grab active:cursor-grabbing transition-transform duration-150">
             <div class="mb-2 relative">
               <textarea
                 id="rant-textarea"
@@ -890,6 +971,11 @@
                 </div>
               </div>
             </div>
+
+            <!-- 上スワイプ誘導インジケーター -->
+            <div class="text-center pt-2 pb-1 text-[10px] text-zinc-400 font-bold flex flex-col items-center gap-1 animate-pulse">
+              <span>▲ 上へスワイプして格納 ▲</span>
+            </div>
           </div>
 
           <div class="w-full flex justify-center pb-2">
@@ -897,7 +983,7 @@
               id="btn-execute-burn"
               class="w-12 h-12 bg-black text-white text-xl font-bold rounded-full hover:bg-zinc-800 hover:scale-105 active:scale-95 transition-all flex items-center justify-center cursor-pointer"
             >
-              <span>🔥</span>
+              <span>↑</span>
             </button>
           </div>
         </div>
@@ -1061,114 +1147,37 @@
       `;
     }
 
-    // --- 炎上アニメーション ---
-    function triggerRealisticFireTransition(onComplete) {
-      const fireCanvas = document.getElementById('fire-canvas');
-      if (!fireCanvas) {
+    // --- 【ダイナミックアイランド吸い込み＆格納アニメーション】 ---
+    function triggerDynamicIslandAbsorbTransition(onComplete) {
+      const card = document.getElementById('solo-burn-card');
+      const notch = document.getElementById('dynamic-island-notch');
+
+      if (!card || !notch) {
         onComplete();
         return;
       }
 
-      fireCanvas.classList.remove('hidden');
-      fireCanvas.width = window.innerWidth;
-      fireCanvas.height = window.innerHeight;
-      const ctx = fireCanvas.getContext('2d');
-
-      let flames = [];
-      for (let i = 0; i < 300; i++) {
-        flames.push({
-          x: Math.random() * fireCanvas.width,
-          y: fireCanvas.height + Math.random() * 80,
-          vx: (Math.random() - 0.5) * 2,
-          vy: -Math.random() * 6 - 3,
-          radius: Math.random() * 55 + 30,
-          life: 0,
-          maxLife: Math.random() * 100 + 80,
-          hue: Math.floor(Math.random() * 30)
-        });
-      }
-
       soundEngine.playSoftBurn();
 
-      let progress = 0;
-      const durationFrames = 220;
-      let frame = 0;
+      // カードを上部ノッチへ吸い込むアニメーション発動
+      card.classList.add('dynamic-island-absorb');
+      notch.classList.remove('hidden');
+      notch.classList.add('expanding');
 
-      function drawSlowFlameFrame() {
-        frame++;
-        progress = frame / durationFrames;
+      setTimeout(() => {
+        onComplete();
 
-        ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(0.12, progress * 0.15)})`;
-        ctx.fillRect(0, 0, fireCanvas.width, fireCanvas.height);
-
-        const flameHeight = Math.min(fireCanvas.height * 1.3, progress * fireCanvas.height * 1.6);
-        const grad = ctx.createLinearGradient(0, fireCanvas.height, 0, Math.max(0, fireCanvas.height - flameHeight));
-        grad.addColorStop(0, 'rgba(255, 30, 0, 0.95)');
-        grad.addColorStop(0.4, 'rgba(255, 100, 0, 0.85)');
-        grad.addColorStop(0.7, 'rgba(255, 200, 0, 0.7)');
-        grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
-
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.moveTo(0, fireCanvas.height);
-        for (let x = 0; x <= fireCanvas.width; x += 25) {
-          const wave = Math.sin(x * 0.02 + progress * 8) * 30 + Math.cos(x * 0.04 - progress * 6) * 20;
-          ctx.lineTo(x, fireCanvas.height - flameHeight + wave);
+        const root = document.getElementById('app-root');
+        if (root) {
+          root.classList.add('slide-up-enter');
+          setTimeout(() => root.classList.remove('slide-up-enter'), 800);
         }
-        ctx.lineTo(fireCanvas.width, fireCanvas.height);
-        ctx.closePath();
-        ctx.fill();
 
-        flames.forEach(f => {
-          f.x += f.vx + Math.sin(f.life * 0.08) * 1.2;
-          f.y += f.vy;
-          f.life++;
-
-          const alpha = Math.max(0, 1 - f.life / f.maxLife);
-          const rad = f.radius * (1 - f.life / f.maxLife * 0.4);
-
-          ctx.save();
-          ctx.globalCompositeOperation = 'lighter';
-          const pGrad = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, Math.max(1, rad));
-          pGrad.addColorStop(0, `hsla(${f.hue}, 100%, 75%, ${alpha})`);
-          pGrad.addColorStop(0.5, `hsla(${f.hue}, 100%, 50%, ${alpha * 0.6})`);
-          pGrad.addColorStop(1, `hsla(${f.hue}, 100%, 20%, 0)`);
-
-          ctx.fillStyle = pGrad;
-          ctx.beginPath();
-          ctx.arc(f.x, f.y, Math.max(1, rad), 0, Math.PI * 2);
-          ctx.fill();
-          ctx.restore();
-
-          if (f.life >= f.maxLife) {
-            f.x = Math.random() * fireCanvas.width;
-            f.y = fireCanvas.height + Math.random() * 40;
-            f.life = 0;
-          }
-        });
-
-        if (frame < durationFrames) {
-          requestAnimationFrame(drawSlowFlameFrame);
-        } else {
-          ctx.fillStyle = 'rgba(255, 255, 255, 1)';
-          ctx.fillRect(0, 0, fireCanvas.width, fireCanvas.height);
-
-          onComplete();
-
-          const root = document.getElementById('app-root');
-          if (root) {
-            root.classList.add('slide-up-enter');
-            setTimeout(() => root.classList.remove('slide-up-enter'), 800);
-          }
-
-          setTimeout(() => {
-            fireCanvas.classList.add('hidden');
-            ctx.clearRect(0, 0, fireCanvas.width, fireCanvas.height);
-          }, 200);
-        }
-      }
-
-      drawSlowFlameFrame();
+        setTimeout(() => {
+          notch.classList.remove('expanding');
+          notch.classList.add('hidden');
+        }, 1200);
+      }, 1100);
     }
 
     // --- イベントリスナー ---
@@ -1236,6 +1245,7 @@
         };
       }
 
+      // 画面キーボード入力完了時にスクロール位置を完璧に元に戻す処理
       const rantArea = document.getElementById('rant-textarea');
       if (rantArea) {
         rantArea.oninput = (e) => {
@@ -1244,6 +1254,12 @@
           if (charCountSpan) {
             charCountSpan.innerText = rantText.length;
           }
+        };
+
+        rantArea.onblur = () => {
+          // キーボード閉じ時に画面位置をスクロールトップへ即時復元
+          window.scrollTo(0, 0);
+          document.body.scrollTop = 0;
         };
       }
 
@@ -1279,6 +1295,47 @@
         };
       }
 
+      // 上スワイプによるダイナミックアイランド格納・お焚き上げ発動
+      const burnCard = document.getElementById('solo-burn-card');
+      let touchStartY = 0;
+      if (burnCard) {
+        burnCard.ontouchstart = (e) => {
+          touchStartY = e.touches[0].clientY;
+        };
+        burnCard.ontouchmove = (e) => {
+          const currentY = e.touches[0].clientY;
+          const diffY = touchStartY - currentY;
+          if (diffY > 40) { // 上に40px以上スワイプしたら発動
+            const textarea = document.getElementById('rant-textarea');
+            const val = textarea ? textarea.value.trim() : rantText.trim();
+            if (!val) return;
+
+            triggerDynamicIslandAbsorbTransition(() => {
+              const instantReplies = generateContextualSympatheticEnjoReplies(val);
+
+              posts.unshift({
+                id: `post-${Date.now()}`,
+                userName: 'あなたのお焚き上げ',
+                userId: '@my_otakiage',
+                dateStr: 'たった今',
+                text: val,
+                authorVibe: { ...vibes },
+                customPhoto: capturedPhotoImg || fallbackUserFaceImg,
+                gasshoCount: 1,
+                tag: selectedTags.join(' '),
+                replies: instantReplies
+              });
+
+              burnStats.totalBurned += 1;
+              rantText = '';
+
+              currentStep = 'chaos_gallery';
+              renderApp();
+            });
+          }
+        };
+      }
+
       const executeBurnBtn = document.getElementById('btn-execute-burn');
       if (executeBurnBtn) {
         executeBurnBtn.onclick = () => {
@@ -1286,7 +1343,7 @@
           const val = textarea ? textarea.value.trim() : rantText.trim();
           if (!val) return;
 
-          triggerRealisticFireTransition(() => {
+          triggerDynamicIslandAbsorbTransition(() => {
             const instantReplies = generateContextualSympatheticEnjoReplies(val);
 
             posts.unshift({
