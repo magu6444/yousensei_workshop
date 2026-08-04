@@ -913,9 +913,7 @@
           canvas._threeTexture.needsUpdate = true;
         }
 
-        // --- 直接タッチドラッグによる頂点変形 ---
-        // canvas._deformPoints は [{x3d, y3d, z3d, dx, dy, dz}] の配列
-        // 各変形ポイントの周囲の頂点をガウス分布で引っ張る
+        // --- 直接タッチドラッグによる頂点変形（トゲトゲしく劇的な変形） ---
         const geo = canvas._threeGeo;
         const posAttr = geo.attributes.position;
         const posArray = posAttr.array;
@@ -934,17 +932,22 @@
             const vdz = z - dp.z3d;
             const distSq = vdx * vdx + vdy * vdy + vdz * vdz;
 
-            // ガウス分布の影響半径（sigma）- 大きめに設定するとより有機的なブロブ感
-            const sigma = dp.sigma || 0.45;
+            // シャープなガウス分布（sigma小さめ → トゲトゲしい局所変形）
+            const sigma = dp.sigma || 0.22;
             const sigmaSq = sigma * sigma;
-
-            // ガウス重み: exp(-dist^2 / (2 * sigma^2))
             const weight = Math.exp(-distSq / (2 * sigmaSq));
 
             if (weight > 0.001) {
-              x += dp.dx * weight;
-              y += dp.dy * weight;
-              z += dp.dz * weight;
+              // 法線方向にも引っ張ることで立体的なトゲ感を出す
+              const nx = initPos[i];
+              const ny = initPos[i + 1];
+              const nz = initPos[i + 2];
+              const nLen = Math.sqrt(nx*nx + ny*ny + nz*nz) || 1;
+              const normalScale = dp.normalPull || 0;
+
+              x += dp.dx * weight + (nx / nLen) * normalScale * weight;
+              y += dp.dy * weight + (ny / nLen) * normalScale * weight;
+              z += dp.dz * weight + (nz / nLen) * normalScale * weight;
             }
           }
 
@@ -1173,7 +1176,7 @@
       return `
         <div class="screen-container bg-white fade-in select-none" style="padding-top: max(2.2rem, calc(env(safe-area-inset-top) + 1.5rem));">
           <div class="text-center pt-0 mb-0">
-            <h2 class="text-2xl font-black tracking-tight text-black">
+            <h2 style="font-family: 'LINE Seed Sans', 'LINE Seed JP', sans-serif; font-weight: 400; font-size: 7vw; transform: scaleX(0.65); transform-origin: center center; color: #111; line-height: 1.1; letter-spacing: -0.02em;">
               ${t.step1Title}
             </h2>
             <p class="text-[12px] font-bold text-zinc-400 mt-0.5 lowercase tracking-wider">
@@ -1181,31 +1184,24 @@
             </p>
           </div>
 
-          <!-- スライド式 顔パラメータ切り替えエリア (左右黒三角マーク ▲ ▼ ◀ ▶ & 5個の丸ドット) -->
+          <!-- スライド式 顔テクスチャ切り替えエリア -->
           <div class="w-full flex-1 flex flex-col items-center justify-center relative my-auto">
             <div class="w-full max-w-[350px] flex items-center justify-between relative px-0">
               
-              <!-- 左黒三角ナビマーク -->
-              <button id="face-prev-arrow" class="w-8 h-8 flex items-center justify-center text-black hover:scale-110 active:scale-90 transition-all z-10 cursor-pointer">
-                <span class="text-sm font-black">◀</span>
+              <!-- 左小さい黒三角 -->
+              <button id="face-prev-arrow" class="w-6 h-6 flex items-center justify-center text-black hover:scale-110 active:scale-90 transition-all z-10 cursor-pointer">
+                <span style="font-size: 8px; line-height: 1;">◀</span>
               </button>
 
-              <!-- 中央：五角形パラメータ Canvas -->
+              <!-- 中央：3D球体 Canvas -->
               <div class="w-[280px] aspect-square flex items-center justify-center relative">
                 <canvas id="vibe-face-canvas" class="block w-full h-full cursor-grab active:cursor-grabbing touch-none"></canvas>
               </div>
 
-              <!-- 右黒三角ナビマーク -->
-              <button id="face-next-arrow" class="w-8 h-8 flex items-center justify-center text-black hover:scale-110 active:scale-90 transition-all z-10 cursor-pointer">
-                <span class="text-sm font-black">▶</span>
+              <!-- 右小さい黒三角 -->
+              <button id="face-next-arrow" class="w-6 h-6 flex items-center justify-center text-black hover:scale-110 active:scale-90 transition-all z-10 cursor-pointer">
+                <span style="font-size: 8px; line-height: 1;">▶</span>
               </button>
-            </div>
-
-            <!-- 5個の丸インジケータードット (選択中は濃い灰色 #4A4A4A) -->
-            <div class="flex items-center justify-center gap-2 mt-4">
-              ${[0, 1, 2, 3, 4].map(idx => `
-                <button data-dotidx="${idx}" class="face-dot-btn w-2 h-2 rounded-full transition-all ${selectedFaceOption === idx ? 'bg-[#4A4A4A] scale-125' : 'bg-zinc-300'}"></button>
-              `).join('')}
             </div>
           </div>
 
@@ -1651,15 +1647,13 @@
         nextArrow.onclick = () => switchFaceOption(selectedFaceOption + 1);
       }
 
-      document.querySelectorAll('.face-dot-btn').forEach(btn => {
-        btn.onclick = (e) => {
-          const idx = Number(e.currentTarget.dataset.dotidx);
-          switchFaceOption(idx);
-        };
-      });
-
       const faceCanvas = document.getElementById('vibe-face-canvas');
       if (faceCanvas && currentStep === 'vibe_check') {
+        // 現在の顔テクスチャを取得するヘルパー
+        const getActiveFace = () => {
+          return (selectedFaceOption === 4 && capturedPhotoImg) ? capturedPhotoImg : presetFaceTextures[selectedFaceOption % 4];
+        };
+
         // 初期状態で変形ポイント配列を用意（まんまる球体）
         if (!faceCanvas._deformPoints) {
           faceCanvas._deformPoints = [];
@@ -1668,24 +1662,20 @@
         let isDragging = false;
         let lastPointerX = 0;
         let lastPointerY = 0;
-        let dragStartTime = 0;
 
         // 2Dスクリーン座標 → 3D球体表面座標への近似変換
         const screenTo3D = (clientX, clientY) => {
           const rect = faceCanvas.getBoundingClientRect();
-          // キャンバス内の正規化座標 (-1 ~ +1)
           const nx = ((clientX - rect.left) / rect.width) * 2 - 1;
           const ny = -(((clientY - rect.top) / rect.height) * 2 - 1);
 
-          // 球体の表示範囲（画面内でのおおよその球体半径を正規化座標で）
           const sphereScreenRadius = 0.55;
           const sx = nx / sphereScreenRadius;
           const sy = ny / sphereScreenRadius;
           const r2 = sx * sx + sy * sy;
 
-          if (r2 > 1.0) return null; // 球体外
+          if (r2 > 1.0) return null;
 
-          // 球体表面上の3D座標（半径1.2の球）
           const sz = Math.sqrt(1.0 - r2);
           return {
             x3d: sx * 1.2,
@@ -1699,8 +1689,9 @@
           isDragging = true;
           lastPointerX = e.clientX;
           lastPointerY = e.clientY;
-          dragStartTime = Date.now();
           faceCanvas.setPointerCapture(e.pointerId);
+          // タップ時に球体が消えないよう、即座に再描画
+          drawPolaApexMeshDistortedFace(faceCanvas, vibes, true, getActiveFace());
         };
 
         faceCanvas.onpointermove = (e) => {
@@ -1714,22 +1705,26 @@
             return;
           }
 
-          // ドラッグ方向の差分を3D空間の変位に変換
+          // ドラッグ方向の差分を3D空間の変位に変換（劇的・トゲトゲしい変形のため倍率UP）
           const rect = faceCanvas.getBoundingClientRect();
-          const ddx = (e.clientX - lastPointerX) / rect.width * 2.4;
-          const ddy = -(e.clientY - lastPointerY) / rect.height * 2.4;
+          const ddx = (e.clientX - lastPointerX) / rect.width * 4.0;
+          const ddy = -(e.clientY - lastPointerY) / rect.height * 4.0;
+          const dragMag = Math.sqrt(ddx * ddx + ddy * ddy);
 
-          // 一定以上の動きがあればその場に変形ポイントを追加
-          if (Math.abs(ddx) > 0.005 || Math.abs(ddy) > 0.005) {
-            // 近隣の既存変形ポイントがあれば、差分を蓄積（新規追加しすぎない）
+          if (dragMag > 0.005) {
+            // 法線方向の引っ張り量（ドラッグ距離に比例してトゲが伸びる）
+            const normalPull = dragMag * 0.8;
+
+            // 近隣の既存変形ポイントがあれば差分蓄積
             let merged = false;
             for (const dp of faceCanvas._deformPoints) {
               const d = Math.sqrt(
                 (dp.x3d - hit.x3d) ** 2 + (dp.y3d - hit.y3d) ** 2 + (dp.z3d - hit.z3d) ** 2
               );
-              if (d < 0.25) {
-                dp.dx += ddx * 0.5;
-                dp.dy += ddy * 0.5;
+              if (d < 0.15) {
+                dp.dx += ddx * 0.7;
+                dp.dy += ddy * 0.7;
+                dp.normalPull = (dp.normalPull || 0) + normalPull * 0.5;
                 merged = true;
                 break;
               }
@@ -1740,19 +1735,20 @@
                 x3d: hit.x3d,
                 y3d: hit.y3d,
                 z3d: hit.z3d,
-                dx: ddx * 0.5,
-                dy: ddy * 0.5,
+                dx: ddx * 0.7,
+                dy: ddy * 0.7,
                 dz: 0,
-                sigma: 0.45
+                normalPull: normalPull,
+                sigma: 0.22
               });
             }
 
-            // 変形ポイント数の上限（パフォーマンス対策）
-            if (faceCanvas._deformPoints.length > 40) {
-              faceCanvas._deformPoints = faceCanvas._deformPoints.slice(-30);
+            // 変形ポイント数の上限
+            if (faceCanvas._deformPoints.length > 60) {
+              faceCanvas._deformPoints = faceCanvas._deformPoints.slice(-45);
             }
 
-            drawPolaApexMeshDistortedFace(faceCanvas, vibes, true, capturedPhotoImg || fallbackUserFaceImg);
+            drawPolaApexMeshDistortedFace(faceCanvas, vibes, true, getActiveFace());
           }
 
           lastPointerX = e.clientX;
