@@ -1352,7 +1352,6 @@
         `;
       }
     }
-    }
 
     // --- STEP 2: 焚き上げ入力画面 ---
     function renderStep2SoloBurn() {
@@ -1539,7 +1538,7 @@
     function renderProfileView() {
       const t = i18n[currentLang];
       // サークルに流れる多言語テキスト（「現実世界では話せない」の多言語版）
-      const circleText = "現実世界では話せない ✦ 不能在现实世界中谈论 ✦ Don't talk about it in the real world. ✦ 현실 세계에서 말하지 마라 ✦ Ne parlez pas dans le monde réel ✦ Не говори об этом в reaな世界で ✦ No hables en el mundo real ✦ ";
+      const circleText = "現実世界では話せない    不能在现实世界中谈论    Don't talk about it in the real world    현실 세계에서 말하지 마라    Ne parlez pas dans le monde réel    Не говори об этом в reaな世界で    No hables en el mundo real    ";
       
       return `
         <div class="flex-1 flex flex-col items-center justify-between fade-in bg-white overflow-hidden pb-12" style="height: calc(100vh - 5rem); position: relative; padding-top: 4vh;">
@@ -1553,7 +1552,7 @@
                 <path id="orbit-outer" d="" />
               </defs>
               <!-- 卵型の輪は一つ -->
-              <text font-size="9.5" fill="#111" font-family="'LINE Seed JP', sans-serif" letter-spacing="1.5">
+              <text font-size="13" font-weight="bold" fill="#111" font-family="'LINE Seed JP', sans-serif" letter-spacing="1.5">
                 <textPath id="orbit-text-path" href="#orbit-outer" startOffset="0%">
                   ${circleText}${circleText}
                 </textPath>
@@ -1568,9 +1567,9 @@
           </div>
 
           <!-- 再設定ボタン（卵形や顔と被らないよう、完全に下部に配置） -->
-          <div class="w-full flex justify-center mt-auto pb-4">
+          <div class="w-full flex justify-center mt-8 mb-24 z-20">
             <button id="btn-recreate-vibe" class="px-10 py-3.5 bg-black text-white text-xs font-bold rounded-full hover:bg-zinc-700 hover:scale-105 active:scale-95 transition-all shadow-md">
-              ${t.btnRecreateVibe}
+              気分を変える
             </button>
           </div>
         </div>
