@@ -169,14 +169,14 @@
       overflow: hidden;
     }
 
-    /* ポスタータイトルの縦列整列 ＆ 行間詰めつつ全体を大きく画面真ん中に配置 */
+    /* ポスタータイトルの縦列整列 ＆ 行間詰めつつ16vwの最適サイズで画面中央やや下寄りに配置 */
     .poster-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       row-gap: 0.15rem;
-      column-gap: -8px;
+      column-gap: -7px;
       width: 100%;
-      max-width: 270px;
+      max-width: 245px;
       margin: 0 auto;
     }
 
@@ -190,7 +190,7 @@
 
     .poster-char {
       font-weight: 400 !important;
-      font-size: 17.5vw;
+      font-size: 16vw;
       color: #111111;
       font-family: 'LINE Seed Sans', 'LINE Seed JP', sans-serif !important;
       line-height: 1;
@@ -202,12 +202,12 @@
 
     @media (min-width: 500px) {
       .poster-char {
-        font-size: 5.2rem;
+        font-size: 4.6rem;
       }
     }
 
     .poster-emoji {
-      font-size: 15.5vw;
+      font-size: 14vw;
       line-height: 1;
       text-align: center;
       display: flex;
@@ -218,7 +218,7 @@
 
     @media (min-width: 500px) {
       .poster-emoji {
-        font-size: 4.5rem;
+        font-size: 4.0rem;
       }
     }
 
@@ -1167,10 +1167,10 @@
     function renderStep0Intro() {
       const t = i18n[currentLang];
       return `
-        <div id="btn-start-app" class="screen-container bg-white select-none fade-in cursor-pointer flex flex-col justify-between items-center pb-8 pt-4">
-          <div class="h-2"></div>
-
-          <div class="my-auto py-2 w-full flex flex-col items-center justify-center">
+        <div id="btn-start-app" class="screen-container bg-white select-none fade-in cursor-pointer flex flex-col justify-center items-center pb-6 pt-12">
+          
+          <!-- タイトル全体を少し下寄りに配置 -->
+          <div class="w-full flex flex-col items-center justify-center mt-6">
             
             <div class="poster-grid">
               <div class="poster-cell"><span class="poster-char">${t.posterLine1[0]}</span></div>
@@ -1194,12 +1194,13 @@
               <div class="poster-cell"><span class="poster-char">${t.posterLine4[3]}</span></div>
             </div>
 
-          </div>
+            <!-- タイトル文字のすぐ下に上品に配置した明滅TAP ENTRY -->
+            <div class="mt-7 text-center">
+              <span class="tap-entry-text text-[11px] font-bold tracking-[0.28em] text-zinc-400 uppercase">
+                TAP ENTRY
+              </span>
+            </div>
 
-          <div class="w-full flex justify-center mb-12 mt-6">
-            <span class="tap-entry-text text-[11px] font-bold tracking-[0.28em] text-zinc-400 uppercase">
-              TAP ENTRY
-            </span>
           </div>
 
         </div>
