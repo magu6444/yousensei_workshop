@@ -878,8 +878,8 @@
       if (currentStep === 'vibe_check') {
         const faceCanvas = document.getElementById('vibe-face-canvas');
         if (faceCanvas) {
-          faceCanvas.width = 200;
-          faceCanvas.height = 200;
+          faceCanvas.width = 320;
+          faceCanvas.height = 320;
           drawPolaApexMeshDistortedFace(faceCanvas, vibes, true, capturedPhotoImg || fallbackUserFaceImg);
         }
       } else if (currentStep === 'chaos_gallery') {
@@ -971,48 +971,24 @@
     function renderStep1VibeCheck() {
       const t = i18n[currentLang];
       return `
-        <div class="screen-container bg-white fade-in">
-          <div class="text-center pt-1 mb-1">
-            <h2 class="text-lg font-black tracking-tight text-black">
+        <div class="screen-container bg-white fade-in select-none">
+          <div class="text-center pt-2 mb-1">
+            <h2 class="text-xl font-black tracking-tight text-black">
               ${t.step1Title}
             </h2>
+            <p class="text-[11px] font-bold text-zinc-400 mt-1 uppercase tracking-wider">
+              TOUCH & DRAG PENTAGON VERTICES TO ADJUST
+            </p>
           </div>
 
-          <div class="w-full max-w-[62%] mx-auto bg-white flex flex-col items-center my-auto">
-            <div class="flex justify-center mb-1.5">
-              <canvas id="vibe-face-canvas" class="block max-w-full h-auto cursor-pointer"></canvas>
-            </div>
-
-            <div class="w-full space-y-1.5 text-xs font-bold">
-              <div>
-                <div class="text-black mb-0.5 font-bold">${t.anger}</div>
-                <input type="range" min="0" max="100" value="${vibes.anger}" data-key="anger" class="vibe-slider w-full cursor-pointer">
-              </div>
-
-              <div>
-                <div class="text-black mb-0.5 font-bold">${t.sadness}</div>
-                <input type="range" min="0" max="100" value="${vibes.sadness}" data-key="sadness" class="vibe-slider w-full cursor-pointer">
-              </div>
-
-              <div>
-                <div class="text-black mb-0.5 font-bold">${t.unfairness}</div>
-                <input type="range" min="0" max="100" value="${vibes.unfairness}" data-key="unfairness" class="vibe-slider w-full cursor-pointer">
-              </div>
-
-              <div>
-                <div class="text-black mb-0.5 font-bold">${t.envy}</div>
-                <input type="range" min="0" max="100" value="${vibes.envy}" data-key="envy" class="vibe-slider w-full cursor-pointer">
-              </div>
-
-              <div>
-                <div class="text-black mb-0.5 font-bold">${t.void}</div>
-                <input type="range" min="0" max="100" value="${vibes.void}" data-key="void" class="vibe-slider w-full cursor-pointer">
-              </div>
+          <div class="w-full flex-1 flex flex-col items-center justify-center relative my-auto">
+            <div class="w-full max-w-[340px] aspect-square flex items-center justify-center relative">
+              <canvas id="vibe-face-canvas" class="block w-full h-full cursor-grab active:cursor-grabbing touch-none"></canvas>
             </div>
           </div>
 
-          <div class="w-full flex justify-center pb-2">
-            <button id="btn-to-burn-step" class="w-12 h-12 bg-black text-white text-xl font-bold rounded-full hover:bg-zinc-800 hover:scale-105 active:scale-95 transition-all flex items-center justify-center">
+          <div class="w-full flex justify-center pb-4">
+            <button id="btn-to-burn-step" class="w-14 h-14 bg-black text-white text-2xl font-bold rounded-full hover:bg-zinc-800 hover:scale-105 active:scale-95 transition-all flex items-center justify-center shadow-lg">
               <span>→</span>
             </button>
           </div>
@@ -1390,20 +1366,75 @@
         };
       }
 
-      document.querySelectorAll('.vibe-slider').forEach(slider => {
-        slider.oninput = (e) => {
-          const key = e.target.dataset.key;
-          const val = Number(e.target.value);
-          vibes[key] = val;
+      const faceCanvas = document.getElementById('vibe-face-canvas');
+      if (faceCanvas && currentStep === 'vibe_check') {
+        let isDraggingVertex = false;
+        let activeKey = null;
 
-          soundEngine.playSubtleClick();
+        const keys = ['anger', 'unfairness', 'void', 'envy', 'sadness'];
+        const angles = [
+          -Math.PI / 2,
+          -Math.PI / 2 + (Math.PI * 2 / 5),
+          -Math.PI / 2 + (Math.PI * 4 / 5),
+          -Math.PI / 2 + (Math.PI * 6 / 5),
+          -Math.PI / 2 + (Math.PI * 8 / 5)
+        ];
 
-          const faceCanvas = document.getElementById('vibe-face-canvas');
-          if (faceCanvas) {
+        const updateVibeFromPointer = (clientX, clientY) => {
+          const rect = faceCanvas.getBoundingClientRect();
+          const x = (clientX - rect.left) * (faceCanvas.width / rect.width);
+          const y = (clientY - rect.top) * (faceCanvas.height / rect.height);
+          const cx = faceCanvas.width / 2;
+          const cy = faceCanvas.height / 2 - 10;
+
+          const dx = x - cx;
+          const dy = y - cy;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const radiusMax = faceCanvas.width * 0.38;
+
+          let val = Math.round(Math.min(100, Math.max(10, (dist / radiusMax) * 100)));
+
+          if (!activeKey) {
+            let angle = Math.atan2(dy, dx);
+            let minDiff = Infinity;
+            let closestIdx = 0;
+            angles.forEach((a, i) => {
+              let diff = Math.abs(angle - a);
+              if (diff > Math.PI) diff = Math.PI * 2 - diff;
+              if (diff < minDiff) {
+                minDiff = diff;
+                closestIdx = i;
+              }
+            });
+            activeKey = keys[closestIdx];
+          }
+
+          if (activeKey) {
+            vibes[activeKey] = val;
+            soundEngine.playSubtleClick();
             drawPolaApexMeshDistortedFace(faceCanvas, vibes, true, capturedPhotoImg || fallbackUserFaceImg);
           }
         };
-      });
+
+        faceCanvas.onpointerdown = (e) => {
+          isDraggingVertex = true;
+          activeKey = null;
+          faceCanvas.setPointerCapture(e.pointerId);
+          updateVibeFromPointer(e.clientX, e.clientY);
+        };
+
+        faceCanvas.onpointermove = (e) => {
+          if (isDraggingVertex) {
+            updateVibeFromPointer(e.clientX, e.clientY);
+          }
+        };
+
+        faceCanvas.onpointerup = (e) => {
+          isDraggingVertex = false;
+          activeKey = null;
+          try { faceCanvas.releasePointerCapture(e.pointerId); } catch(err) {}
+        };
+      }
 
       const toBurnBtn = document.getElementById('btn-to-burn-step');
       if (toBurnBtn) {
