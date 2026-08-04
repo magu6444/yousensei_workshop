@@ -480,15 +480,25 @@
       return img;
     }
 
-    let presetFaceTextures = [
-      createCustomPresetFaceTexture(['#FFE4D6', '#F7D0BC', '#EBB59D'], '#1F1A17', '#C96F68', 'normal'),
-      createCustomPresetFaceTexture(['#FFF5EB', '#FFE0CC', '#F7C4A5'], '#2B3A42', '#E06D53', 'angry'),
-      createCustomPresetFaceTexture(['#F4E7DF', '#E8D4C8', '#D6B7A4'], '#1F2421', '#8C4843', 'normal'),
-      createCustomPresetFaceTexture(['#FFF0F5', '#FFE4E1', '#E6C2C2'], '#3B2F2F', '#D2527F', 'normal')
+    let presetFaceTextures = [new Image(), new Image(), new Image(), new Image()];
+    const presetSources = [
+      'images/face_preset_0.jpg',
+      'images/face_preset_1.jpg',
+      'images/face_preset_2.jpg',
+      'images/face_preset_3.jpg'
     ];
 
+    presetSources.forEach((src, idx) => {
+      const img = new Image();
+      img.src = src;
+      img.onload = () => {
+        presetFaceTextures[idx] = img;
+        if (currentStep === 'vibe_check') renderApp();
+      };
+    });
+
     let fallbackUserFaceImg = presetFaceTextures[0];
-    let selectedFaceOption = 0; // 0..3: presets, 4: my camera face
+    let selectedFaceOption = 0; // 0..3: real face presets, 4: my camera face
 
     function initCameraCapture(onSuccess) {
       const video = document.getElementById('webcam-video');
@@ -1108,7 +1118,7 @@
               <div class="poster-cell"><span class="poster-char">${t.posterLine4[3]}</span></div>
             </div>
 
-          <div id="btn-start-app" class="w-full flex justify-center pb-16 cursor-pointer">
+          <div id="btn-start-app" class="w-full flex justify-center pb-6 cursor-pointer">
             <span class="tap-entry-text text-[11px] font-bold tracking-[0.25em] text-zinc-400 uppercase">
               TAP ENTRY
             </span>
