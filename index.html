@@ -160,7 +160,7 @@
       flex-direction: column;
       justify-content: space-between;
       height: 100dvh;
-      padding-top: max(4.0rem, calc(env(safe-area-inset-top) + 3.0rem));
+      padding-top: max(7.0rem, calc(env(safe-area-inset-top) + 6.0rem));
       padding-bottom: max(4.5rem, calc(env(safe-area-inset-bottom) + 3.5rem));
       padding-left: 1.25rem;
       padding-right: 1.25rem;
@@ -374,16 +374,25 @@
   <canvas id="captured-photo-canvas" class="hidden"></canvas>
 
   <script>
-    // --- サウンドエンジン ---
+    // --- Web Audio API 低遅延即時サウンドエンジン ---
     const soundEngine = {
+      audioCtx: null,
+      getAudioContext() {
+        if (!this.audioCtx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) this.audioCtx = new AudioCtx();
+        }
+        if (this.audioCtx && this.audioCtx.state === 'suspended') {
+          this.audioCtx.resume();
+        }
+        return this.audioCtx;
+      },
       playAudio(src) {
         try {
           const audio = new Audio(src);
           audio.currentTime = 0;
-          audio.play().catch(e => console.log('Audio play error:', e));
-        } catch (e) {
-          console.error(e);
-        }
+          audio.play().catch(e => {});
+        } catch (e) {}
       },
       playSoftBurn() {
         this.playAudio('audio/horagai.mp3');
@@ -393,19 +402,18 @@
       },
       playSubtleClick() {
         try {
-          const AudioCtx = window.AudioContext || window.webkitAudioContext;
-          if (!AudioCtx) return;
-          const ctx = new AudioCtx();
+          const ctx = this.getAudioContext();
+          if (!ctx) return;
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
           osc.type = 'sine';
-          osc.frequency.setValueAtTime(600, ctx.currentTime);
-          gain.gain.setValueAtTime(0.04, ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.03);
+          osc.frequency.setValueAtTime(750, ctx.currentTime);
+          gain.gain.setValueAtTime(0.08, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.02);
           osc.connect(gain);
           gain.connect(ctx.destination);
           osc.start();
-          osc.stop(ctx.currentTime + 0.03);
+          osc.stop(ctx.currentTime + 0.02);
         } catch (e) {}
       }
     };
@@ -965,7 +973,7 @@
         return;
       }
 
-      const isNavScreen = (currentStep === 'chaos_gallery' || currentStep === 'profile' || currentStep === 'solo_burn');
+      const isNavScreen = (currentStep === 'vibe_check' || currentStep === 'chaos_gallery' || currentStep === 'profile' || currentStep === 'solo_burn');
 
       root.innerHTML = `
         <main class="flex-1 p-0 flex flex-col justify-start bg-white ${isNavScreen ? 'pb-20' : ''}">
@@ -1108,27 +1116,37 @@
             <p class="text-[11px] font-bold text-zinc-400 mt-1 uppercase tracking-wider">
               TOUCH & DRAG PENTAGON VERTICES TO ADJUST
             </p>
+          </div>
 
-            <!-- 5種類の顔タイプ選択ボタン -->
-            <div class="flex justify-center items-center gap-1.5 mt-2.5">
-              ${[0, 1, 2, 3].map(idx => `
-                <button data-faceidx="${idx}" class="face-opt-btn px-2.5 py-1 text-xs font-bold rounded-full border ${selectedFaceOption === idx ? 'bg-black text-white border-black' : 'bg-zinc-100 text-zinc-600 border-zinc-200'} transition-all">
-                  顔 ${idx + 1}
-                </button>
-              `).join('')}
-              <button data-faceidx="4" class="face-opt-btn px-2.5 py-1 text-xs font-bold rounded-full border ${selectedFaceOption === 4 ? 'bg-black text-white border-black' : 'bg-zinc-100 text-zinc-600 border-zinc-200'} transition-all flex items-center gap-1">
-                <span>📷 自分の顔</span>
+          <!-- スライド式 顔パラメータ切り替えエリア (左右三角マーク ◀ ▶ & 5個の丸ドット) -->
+          <div class="w-full flex-1 flex flex-col items-center justify-center relative my-auto">
+            <div class="w-full max-w-[340px] flex items-center justify-between relative px-1">
+              
+              <!-- 左三角ナビマーク -->
+              <button id="face-prev-arrow" class="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-black active:scale-90 transition-all z-10 cursor-pointer">
+                <span class="text-base font-bold">◀</span>
+              </button>
+
+              <!-- 中央：五角形パラメータ Canvas -->
+              <div class="w-[280px] aspect-square flex items-center justify-center relative">
+                <canvas id="vibe-face-canvas" class="block w-full h-full cursor-grab active:cursor-grabbing touch-none"></canvas>
+              </div>
+
+              <!-- 右三角ナビマーク -->
+              <button id="face-next-arrow" class="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-black active:scale-90 transition-all z-10 cursor-pointer">
+                <span class="text-base font-bold">▶</span>
               </button>
             </div>
-          </div>
 
-          <div class="w-full flex-1 flex flex-col items-center justify-center relative my-auto">
-            <div class="w-full max-w-[310px] aspect-square flex items-center justify-center relative">
-              <canvas id="vibe-face-canvas" class="block w-full h-full cursor-grab active:cursor-grabbing touch-none"></canvas>
+            <!-- 5個の丸インジケータードット (選択中は濃い灰色 #4A4A4A) -->
+            <div class="flex items-center justify-center gap-2 mt-3">
+              ${[0, 1, 2, 3, 4].map(idx => `
+                <button data-dotidx="${idx}" class="face-dot-btn w-2.5 h-2.5 rounded-full transition-all ${selectedFaceOption === idx ? 'bg-[#4A4A4A] scale-125' : 'bg-zinc-200'}"></button>
+              `).join('')}
             </div>
           </div>
 
-          <div class="w-full flex justify-center pb-14">
+          <div class="w-full flex justify-center pb-20">
             <button id="btn-to-burn-step" class="w-14 h-14 bg-black text-white text-2xl font-bold rounded-full hover:bg-zinc-800 hover:scale-105 active:scale-95 transition-all flex items-center justify-center shadow-lg">
               <span>→</span>
             </button>
@@ -1543,22 +1561,36 @@
         };
       }
 
-      // 5種類の顔タイプ選択ボタンリスナー
-      document.querySelectorAll('.face-opt-btn').forEach(btn => {
-        btn.onclick = (e) => {
-          const idx = Number(e.currentTarget.dataset.faceidx);
-          soundEngine.playSubtleClick();
-          selectedFaceOption = idx;
+      // 顔バリエーション切り替え処理ヘルパー
+      const switchFaceOption = (targetIdx) => {
+        soundEngine.playSubtleClick();
+        selectedFaceOption = (targetIdx + 5) % 5;
 
-          if (idx === 4) {
-            // 5個目（自分の顔）が選択された時に初めてカメラの許可を要請
-            initCameraCapture(() => {
-              renderApp();
-            });
-          } else {
-            fallbackUserFaceImg = presetFaceTextures[idx];
+        if (selectedFaceOption === 4) {
+          // 5個目（自分の顔）選択時にカメラ許可を請求
+          initCameraCapture(() => {
             renderApp();
-          }
+          });
+        } else {
+          fallbackUserFaceImg = presetFaceTextures[selectedFaceOption];
+          renderApp();
+        }
+      };
+
+      const prevArrow = document.getElementById('face-prev-arrow');
+      if (prevArrow) {
+        prevArrow.onclick = () => switchFaceOption(selectedFaceOption - 1);
+      }
+
+      const nextArrow = document.getElementById('face-next-arrow');
+      if (nextArrow) {
+        nextArrow.onclick = () => switchFaceOption(selectedFaceOption + 1);
+      }
+
+      document.querySelectorAll('.face-dot-btn').forEach(btn => {
+        btn.onclick = (e) => {
+          const idx = Number(e.currentTarget.dataset.dotidx);
+          switchFaceOption(idx);
         };
       });
 
