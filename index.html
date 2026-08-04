@@ -101,6 +101,20 @@
       touch-action: none;
     }
 
+    /* 全画面最前面レイヤー：牙（Teeth）フレームオーバーレイ */
+    .app-teeth-frame {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      background-image: url('images/app_frame.png');
+      background-size: 100% 100%;
+      background-position: center;
+      background-repeat: no-repeat;
+      z-index: 9999;
+      pointer-events: none;
+    }
+
     /* 全画面ジャストフィット用コンテナ */
     .screen-container {
       display: flex;
@@ -307,6 +321,9 @@
   </style>
 </head>
 <body class="bg-white text-paper-dark min-h-screen flex flex-col antialiased">
+
+  <!-- 全画面最前面レイヤー：牙（Teeth）フレーム -->
+  <div class="app-teeth-frame"></div>
 
   <canvas id="real-fire-canvas"></canvas>
 
