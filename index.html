@@ -547,7 +547,7 @@
 
     function startCamera(videoElement, onReady) {
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 480, height: 480 }, audio: false })
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 480 }, height: { ideal: 480 } }, audio: false })
           .then(stream => {
             localMediaStream = stream;
             videoElement.srcObject = stream;
@@ -600,9 +600,7 @@
       const dataUrl = canvas.toDataURL('image/png');
       const img = new Image();
       img.src = dataUrl;
-      img.onload = () => {
-        capturedPhotoImg = img;
-      };
+      capturedPhotoImg = img;
       return dataUrl;
     }
 
@@ -1757,149 +1755,81 @@
         };
       }
 
-      // 顔バリエーション切り替え処理ヘルパー
-      const switchFaceOption = (targetIdx) => {
-        soundEngine.playSubtleClick();
-        selectedFaceOption = (targetIdx + 5) % 5;
-
-        if (selectedFaceOption === 4) {
-          // 5個目（自分の顔）選択時にカメラ許可を請求
-          initCameraCapture(() => {
-            renderApp();
-          });
-        } else {
-          fallbackUserFaceImg = presetFaceTextures[selectedFaceOption];
-          renderApp();
-        }
-      };
-
-      const prevArrow = document.getElementById('face-prev-arrow');
-      if (prevArrow) {
-        prevArrow.onclick = () => switchFaceOption(selectedFaceOption - 1);
-      }
-
-      const nextArrow = document.getElementById('face-next-arrow');
-      if (nextArrow) {
-        nextArrow.onclick = () => switchFaceOption(selectedFaceOption + 1);
-      }
-
-      const faceCanvas = document.getElementById('vibe-face-canvas');
-      if (faceCanvas && currentStep === 'vibe_check') {
-        // 現在の顔テクスチャを取得するヘルパー
-        const getActiveFace = () => {
-          return (selectedFaceOption === 4 && capturedPhotoImg) ? capturedPhotoImg : presetFaceTextures[selectedFaceOption % 4];
-        };
-
-        // 初期状態で変形ポイント配列を用意（まんまる球体）
-        if (!faceCanvas._deformPoints) {
-          faceCanvas._deformPoints = [];
-        }
-
-        let isDragging = false;
-        let lastPointerX = 0;
-        let lastPointerY = 0;
-
-        // 2Dスクリーン座標 → 3D球体表面座標への近似変換
-        // ※ Three.js の球体は rotation.y = -PI/2 でテクスチャが -90 度回転している
-        // screenTo3D は表示上の x 座標をそのまま使い、右側でも正しく当たり判定するため
-        // スクリーン座標系をキャンバス内比率で完全に計算する
-        const screenTo3D = (clientX, clientY) => {
-          const rect = faceCanvas.getBoundingClientRect();
-          // キャンバス中心からの正規化オフセット (-1 ~ +1)
-          const nx = ((clientX - rect.left) / rect.width) * 2 - 1;
-          const ny = -(((clientY - rect.top) / rect.height) * 2 - 1);
-
-          // 表示されている球体のスクリーン半径比（Three.js FOV 45°, z=3.6, 半径1.2 から計算）
-          const sphereScreenRadius = 0.58;
-          const sx = nx / sphereScreenRadius;
-          const sy = ny / sphereScreenRadius;
-          const r2 = sx * sx + sy * sy;
-
-          if (r2 > 1.02) return null; // 球体外（少し余裕を持たせる）
-          const rClamped = Math.min(r2, 1.0);
-          const sz = Math.sqrt(1.0 - rClamped);
-          return {
-            x3d: sx * 1.2,
-            y3d: sy * 1.2,
-            z3d: sz * 1.2
-          };
-        };
-
-        faceCanvas.onpointerdown = (e) => {
-          e.preventDefault();
-          isDragging = true;
-          lastPointerX = e.clientX;
-          lastPointerY = e.clientY;
-          faceCanvas.setPointerCapture(e.pointerId);
-          // タップ時に球体が消えないよう、即座に再描画
-          drawPolaApexMeshDistortedFace(faceCanvas, vibes, true, getActiveFace());
-        };
-
-        faceCanvas.onpointermove = (e) => {
-          if (!isDragging) return;
-          e.preventDefault();
-
-          const hit = screenTo3D(lastPointerX, lastPointerY);
-          if (!hit) {
-            lastPointerX = e.clientX;
-            lastPointerY = e.clientY;
-            return;
-          }
-
-          // ドラッグ方向の差分を3D空間の変位に変換（劇的・トゲトゲしい変形のため倍率UP）
-          const rect = faceCanvas.getBoundingClientRect();
-          const ddx = (e.clientX - lastPointerX) / rect.width * 4.0;
-          const ddy = -(e.clientY - lastPointerY) / rect.height * 4.0;
-          const dragMag = Math.sqrt(ddx * ddx + ddy * ddy);
-
-          if (dragMag > 0.005) {
-            // 法線方向の引っ張り量（ドラッグ距離に比例してトゲが伸びる）
-            const normalPull = dragMag * 0.8;
-
-            // 近隣の既存変形ポイントがあれば差分蓄積
-            let merged = false;
-            for (const dp of faceCanvas._deformPoints) {
-              const d = Math.sqrt(
-                (dp.x3d - hit.x3d) ** 2 + (dp.y3d - hit.y3d) ** 2 + (dp.z3d - hit.z3d) ** 2
-              );
-              if (d < 0.15) {
-                dp.dx += ddx * 0.7;
-                dp.dy += ddy * 0.7;
-                dp.normalPull = (dp.normalPull || 0) + normalPull * 0.5;
-                merged = true;
-                break;
+      // --- カメラ撮影とスライダーのイベントリスナー設定 ---
+      if (currentStep === 'vibe_check') {
+        const cameraPreview = document.getElementById('vibe-camera-preview');
+        if (cameraPreview && isCameraPreviewing) {
+          startCamera(cameraPreview, (success) => {
+            if (!success) {
+              console.warn('Camera failed to start, auto-fallback to preset');
+              // カメラ起動失敗時は、ダミー表示用にボタン等を出すか、自動でプレビューを抜けてプリセットで進む
+              const skipTip = document.createElement('div');
+              skipTip.className = 'absolute inset-0 bg-zinc-900/80 text-white p-4 flex flex-col items-center justify-center text-center text-xs gap-3 z-30';
+              skipTip.innerHTML = '<p>カメラを起動できませんでした。<br>プリセット画像で調整に進みます。</p><button id="btn-skip-camera" class="px-5 py-2 bg-white text-black font-bold rounded-full">プリセットで進む</button>';
+              cameraPreview.parentElement.appendChild(skipTip);
+              
+              const skipBtn = document.getElementById('btn-skip-camera');
+              if (skipBtn) {
+                skipBtn.onclick = () => {
+                  soundEngine.playSubtleClick();
+                  isCameraPreviewing = false;
+                  capturedPhotoImg = null; // フォールバックプリセットを使用
+                  renderApp();
+                };
               }
             }
+          });
+        }
 
-            if (!merged) {
-              faceCanvas._deformPoints.push({
-                x3d: hit.x3d,
-                y3d: hit.y3d,
-                z3d: hit.z3d,
-                dx: ddx * 0.7,
-                dy: ddy * 0.7,
-                dz: 0,
-                normalPull: normalPull,
-                sigma: 0.22
-              });
+        const captureBtn = document.getElementById('btn-capture-photo');
+        if (captureBtn && cameraPreview) {
+          captureBtn.onclick = () => {
+            soundEngine.playSubtleClick();
+            captureFacePhoto(cameraPreview);
+            stopCamera();
+            isCameraPreviewing = false;
+            pushVibesHistory();
+            renderApp();
+          };
+        }
+
+        // スライダーの入力リスナー
+        document.querySelectorAll('.slider-input').forEach(slider => {
+          slider.oninput = (e) => {
+            const key = e.target.dataset.vibe;
+            const val = parseInt(e.target.value);
+            vibes[key] = val;
+            
+            const valSpan = document.getElementById(`val-${key}`);
+            if (valSpan) valSpan.innerText = val;
+
+            const faceImg = document.getElementById('vibe-face-preview-img');
+            if (faceImg) {
+              faceImg.style.cssText = getDistortionStyle(vibes);
             }
+          };
 
-            // 変形ポイント数の上限
-            if (faceCanvas._deformPoints.length > 60) {
-              faceCanvas._deformPoints = faceCanvas._deformPoints.slice(-45);
-            }
+          slider.onchange = () => {
+            pushVibesHistory();
+          };
+        });
 
-            drawPolaApexMeshDistortedFace(faceCanvas, vibes, true, getActiveFace());
-          }
+        // Do/Undoボタン
+        const undoBtn = document.getElementById('btn-undo');
+        if (undoBtn) {
+          undoBtn.onclick = () => {
+            soundEngine.playSubtleClick();
+            undoVibes();
+          };
+        }
 
-          lastPointerX = e.clientX;
-          lastPointerY = e.clientY;
-        };
-
-        faceCanvas.onpointerup = (e) => {
-          isDragging = false;
-          try { faceCanvas.releasePointerCapture(e.pointerId); } catch(err) {}
-        };
+        const redoBtn = document.getElementById('btn-redo');
+        if (redoBtn) {
+          redoBtn.onclick = () => {
+            soundEngine.playSubtleClick();
+            redoVibes();
+          };
+        }
       }
 
       const toBurnBtn = document.getElementById('btn-to-burn-step');
