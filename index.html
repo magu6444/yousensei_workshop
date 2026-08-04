@@ -850,7 +850,7 @@
 
       ctx.clearRect(0, 0, width, height);
 
-      const radiusMax = width * (showMetrics ? 0.32 : 0.46);
+      const radiusMax = width * (showMetrics ? 0.32 : 0.44);
       const angles = [
         -Math.PI / 2,
         -Math.PI / 2 + (Math.PI * 2 / 5),
@@ -867,12 +867,14 @@
 
       const vibeValues = [anger, unfairness, voidVal, envy, sadness];
 
+      // 5頂点の変形座標
       let poly5Points = angles.map((a, i) => {
         const v = vibeValues[i];
         const r = radiusMax * v;
         return { x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r };
       });
 
+      // 背景のレーダーチャートグリッドライン
       if (showMetrics) {
         ctx.strokeStyle = '#EBEBEF';
         ctx.lineWidth = 1;
@@ -897,25 +899,135 @@
         });
       }
 
+      // --- 3D 卵型・球体ヘッド（立体エッグ型変形レンダラー）---
       const activePhoto = customPhotoImg || capturedPhotoImg || fallbackUserFaceImg;
-      if (activePhoto && activePhoto.complete) {
-        const srcW = activePhoto.width || 300;
-        const srcH = activePhoto.height || 300;
 
-        const srcCenter = { x: srcW / 2, y: srcH / 2 };
-        const src5Points = angles.map(a => ({
-          x: srcCenter.x + Math.cos(a) * (srcW * 0.46),
-          y: srcCenter.y + Math.sin(a) * (srcH * 0.46)
-        }));
+      // 歪みの動的計算（5方向の引き伸ばしベクトル）
+      const avgStretchX = (poly5Points[1].x + poly5Points[2].x - poly5Points[3].x - poly5Points[4].x) * 0.25;
+      const avgStretchY = (poly5Points[2].y + poly5Points[3].y - poly5Points[0].y * 2) * 0.25;
 
-        for (let i = 0; i < 5; i++) {
-          const next = (i + 1) % 5;
-          const sTriangle = [srcCenter, src5Points[i], src5Points[next]];
-          const dTriangle = [{ x: cx, y: cy }, poly5Points[i], poly5Points[next]];
+      // ヘッド（球体）のクリッピング枠生成
+      ctx.save();
 
-          drawTexturedTriangle(ctx, activePhoto, sTriangle, dTriangle);
-        }
+      // 五角形パラメータに連動して球体がみよーんと伸び縮みする動的パス
+      ctx.beginPath();
+      const numSteps = 40;
+      for (let i = 0; i <= numSteps; i++) {
+        const theta = (i / numSteps) * Math.PI * 2 - Math.PI / 2;
+        
+        // 各角度におけるパラメータの引き伸ばし係数を計算
+        let angleIdx = ((theta + Math.PI / 2) / (Math.PI * 2 / 5)) % 5;
+        if (angleIdx < 0) angleIdx += 5;
+        const baseI = Math.floor(angleIdx);
+        const nextI = (baseI + 1) % 5;
+        const ratio = angleIdx - baseI;
+        const interpolatedVibe = vibeValues[baseI] * (1 - ratio) + vibeValues[nextI] * ratio;
+
+        // 球体の半径がパラメータでダイナミックにみよーんと変形
+        const rCurrent = radiusMax * (0.4 + interpolatedVibe * 0.65);
+        const px = cx + Math.cos(theta) * rCurrent;
+        const py = cy + Math.sin(theta) * rCurrent * (1 + (vibeValues[0] - vibeValues[2]) * 0.2);
+
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
       }
+      ctx.closePath();
+
+      // 球体のベース肌色＆3D球状グラデーション（影・ハイライト）
+      const sphereGrad = ctx.createRadialGradient(
+        cx - radiusMax * 0.25, cy - radiusMax * 0.35, radiusMax * 0.1,
+        cx, cy, radiusMax * 1.2
+      );
+      sphereGrad.addColorStop(0, '#FFFFFF');
+      sphereGrad.addColorStop(0.3, '#FFE3D1');
+      sphereGrad.addColorStop(0.75, '#F3BA9E');
+      sphereGrad.addColorStop(1, '#D9896A');
+
+      ctx.fillStyle = sphereGrad;
+      ctx.fill();
+
+      // 写真テクスチャ（目・鼻・口・眉毛のドアップクロップ描画）
+      ctx.clip();
+
+      if (activePhoto && activePhoto.complete && activePhoto.width > 0) {
+        ctx.save();
+        ctx.globalCompositeOperation = 'multiply';
+        ctx.globalAlpha = 0.92;
+
+        // 顔パーツ（目・鼻・口）を中央にドアップ拡大表示
+        const srcW = activePhoto.width;
+        const srcH = activePhoto.height;
+
+        // 目・鼻・口の主要パーツ部分を中央ドアップ切り抜き (Zoom Crop)
+        const cropW = srcW * 0.48;
+        const cropH = srcH * 0.48;
+        const cropX = (srcW - cropW) / 2;
+        const cropY = (srcH - cropH) / 2;
+
+        // パラメータ変形に応じた引き伸ばし変形
+        const destW = radiusMax * 2.2 * (1 + (vibeValues[1] + vibeValues[3]) * 0.2);
+        const destH = radiusMax * 2.2 * (1 + (vibeValues[0] + vibeValues[2]) * 0.25);
+        const destX = cx - destW / 2 + avgStretchX * 0.3;
+        const destY = cy - destH / 2 + avgStretchY * 0.3;
+
+        ctx.drawImage(
+          activePhoto,
+          cropX, cropY, cropW, cropH,
+          destX, destY, destW, destH
+        );
+        ctx.restore();
+      }
+
+      // 3D球体（エッグ型）特有の球面光沢ハイライト＆周囲立体シャドウ
+      ctx.save();
+      ctx.globalCompositeOperation = 'source-over';
+
+      // 球体縁の立体シャドウ
+      const innerShadow = ctx.createRadialGradient(
+        cx, cy, radiusMax * 0.5,
+        cx, cy, radiusMax * 1.1
+      );
+      innerShadow.addColorStop(0, 'rgba(0, 0, 0, 0)');
+      innerShadow.addColorStop(0.7, 'rgba(120, 60, 30, 0.15)');
+      innerShadow.addColorStop(1, 'rgba(60, 20, 10, 0.45)');
+      ctx.fillStyle = innerShadow;
+      ctx.fillRect(0, 0, width, height);
+
+      // 上部球体ハイライト
+      const highlight = ctx.createRadialGradient(
+        cx - radiusMax * 0.3, cy - radiusMax * 0.4, 0,
+        cx - radiusMax * 0.3, cy - radiusMax * 0.4, radiusMax * 0.6
+      );
+      highlight.addColorStop(0, 'rgba(255, 255, 255, 0.5)');
+      highlight.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      ctx.fillStyle = highlight;
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.restore();
+      ctx.restore(); // 球体クリッピング解除
+
+      // 外枠アウトライン線描画
+      ctx.strokeStyle = '#222222';
+      ctx.lineWidth = showMetrics ? 3 : 2;
+      ctx.beginPath();
+      for (let i = 0; i <= numSteps; i++) {
+        const theta = (i / numSteps) * Math.PI * 2 - Math.PI / 2;
+        let angleIdx = ((theta + Math.PI / 2) / (Math.PI * 2 / 5)) % 5;
+        if (angleIdx < 0) angleIdx += 5;
+        const baseI = Math.floor(angleIdx);
+        const nextI = (baseI + 1) % 5;
+        const ratio = angleIdx - baseI;
+        const interpolatedVibe = vibeValues[baseI] * (1 - ratio) + vibeValues[nextI] * ratio;
+
+        const rCurrent = radiusMax * (0.4 + interpolatedVibe * 0.65);
+        const px = cx + Math.cos(theta) * rCurrent;
+        const py = cy + Math.sin(theta) * rCurrent * (1 + (vibeValues[0] - vibeValues[2]) * 0.2);
+
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.stroke();
 
       if (showMetrics) {
         ctx.fillStyle = '#111111';
