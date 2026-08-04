@@ -1110,9 +1110,55 @@
       } else if (currentStep === 'profile') {
         const profileCanvas = document.getElementById('profile-face-canvas');
         if (profileCanvas) {
-          profileCanvas.width = 180;
-          profileCanvas.height = 180;
-          drawPolaApexMeshDistortedFace(profileCanvas, vibes, true, capturedPhotoImg || fallbackUserFaceImg);
+          profileCanvas.width = 320;
+          profileCanvas.height = 320;
+          drawPolaApexMeshDistortedFace(profileCanvas, vibes, false, capturedPhotoImg || fallbackUserFaceImg);
+        }
+
+        // --- SVGサークルテキストの楕円パスを設定し、JSでアニメーション ---
+        const svg = document.getElementById('profile-orbit-svg');
+        if (svg) {
+          const svgW = svg.clientWidth || 350;
+          const svgH = svg.clientHeight || 350;
+          const cx = svgW / 2;
+          const cy = svgH / 2;
+
+          // 外側の楕円パス（orbit-outer）
+          const rx1 = svgW * 0.46;
+          const ry1 = svgH * 0.47;
+          const outerPath = document.getElementById('orbit-outer');
+          if (outerPath) {
+            outerPath.setAttribute('d',
+              `M ${cx - rx1},${cy} a ${rx1},${ry1} 0 1,1 ${rx1*2},0 a ${rx1},${ry1} 0 1,1 -${rx1*2},0`
+            );
+          }
+
+          // 内側の楕円パス（orbit-inner）
+          const rx2 = svgW * 0.35;
+          const ry2 = svgH * 0.36;
+          const innerPath = document.getElementById('orbit-inner');
+          if (innerPath) {
+            innerPath.setAttribute('d',
+              `M ${cx - rx2},${cy} a ${rx2},${ry2} 0 1,0 ${rx2*2},0 a ${rx2},${ry2} 0 1,0 -${rx2*2},0`
+            );
+          }
+
+          // SVG全体を時計回りに回転させるアニメーション
+          let outerAngle = 0;
+          let innerAngle = 0;
+          const outerTextEl = svg.querySelector('text:first-of-type');
+          const innerTextEl = svg.querySelector('text:last-of-type');
+
+          // SVG全体を包む2つのグループを動的に作成して個別に回転
+          const animateOrbits = () => {
+            if (!document.getElementById('profile-orbit-svg')) return; // ページ遷移で停止
+            outerAngle = (outerAngle + 0.18) % 360;
+            innerAngle = (innerAngle - 0.13 + 360) % 360;
+            if (outerPath) outerPath.setAttribute('transform', `rotate(${outerAngle}, ${cx}, ${cy})`);
+            if (innerPath) innerPath.setAttribute('transform', `rotate(${innerAngle}, ${cx}, ${cy})`);
+            requestAnimationFrame(animateOrbits);
+          };
+          requestAnimationFrame(animateOrbits);
         }
       }
 
@@ -1188,9 +1234,9 @@
           <div class="w-full flex-1 flex flex-col items-center justify-center relative my-auto">
             <div class="w-full max-w-[350px] flex items-center justify-between relative px-0">
               
-              <!-- 左小さい黒三角 -->
-              <button id="face-prev-arrow" class="w-6 h-6 flex items-center justify-center text-black hover:scale-110 active:scale-90 transition-all z-10 cursor-pointer">
-                <span style="font-size: 8px; line-height: 1;">◀</span>
+              <!-- 左黒三角 -->
+              <button id="face-prev-arrow" class="w-8 h-8 flex items-center justify-center text-black hover:scale-110 active:scale-90 transition-all z-10 cursor-pointer">
+                <span style="font-size: 13px; line-height: 1; font-weight: 900;">◀</span>
               </button>
 
               <!-- 中央：3D球体 Canvas -->
@@ -1198,9 +1244,9 @@
                 <canvas id="vibe-face-canvas" class="block w-full h-full cursor-grab active:cursor-grabbing touch-none"></canvas>
               </div>
 
-              <!-- 右小さい黒三角 -->
-              <button id="face-next-arrow" class="w-6 h-6 flex items-center justify-center text-black hover:scale-110 active:scale-90 transition-all z-10 cursor-pointer">
-                <span style="font-size: 8px; line-height: 1;">▶</span>
+              <!-- 右黒三角 -->
+              <button id="face-next-arrow" class="w-8 h-8 flex items-center justify-center text-black hover:scale-110 active:scale-90 transition-all z-10 cursor-pointer">
+                <span style="font-size: 13px; line-height: 1; font-weight: 900;">▶</span>
               </button>
             </div>
           </div>
@@ -1396,73 +1442,75 @@
       `;
     }
 
-    // --- 感情パスPORT (Temnoart Visual Diary ミニマル・エディトリアルデザイン) ---
+    // --- マイページ: 登録した今日の顔 + サークル文字アニメーション ---
     function renderProfileView() {
       const t = i18n[currentLang];
-      const anonId = Math.floor(vibes.anger * 77);
+      // サークルに流れる多言語テキスト（お焚き上げプラットフォームの意味）
+      const circleText = "お焚き上げプラットフォーム ✦ この装置は人々の鬱憤を炎上させ払うための機器であり大した意味はない ✦ Don't talk about it in the real world. ✦ 現実世界で話すな ✦ 不要在现实世界中谈论 ✦ 현실 세계에서 말하지 마라 ✦ Ne parlez pas dans le monde réel ✦ Не говори об этом в реальном мире ✦ No hables en el mundo real ✦ لا تتحدث في العالم الحقيقي ✦ ";
       
       return `
-        <div class="flex-1 flex flex-col items-center justify-start pt-6 pb-24 px-4 fade-in bg-[#FAFAFA] min-h-screen text-black font-sans">
+        <div class="flex-1 flex flex-col items-center justify-center fade-in bg-white overflow-hidden" style="height: calc(100vh - 5rem); position: relative;">
           
-          <!-- 上部極小ヘッダー (temnoart & (1)) -->
-          <div class="w-full max-w-sm flex justify-between items-center text-[10px] text-zinc-500 font-mono mb-6 px-1">
-            <span class="tracking-widest">temnoart</span>
-            <span class="tracking-widest">(1)</span>
-          </div>
+          <!-- サークルテキスト + 中央顔 のコンテナ -->
+          <div class="relative flex items-center justify-center" style="width: min(88vw, 380px); height: min(88vw, 380px);">
+            
+            <!-- SVGサークルテキスト（二重楕円、回転アニメーション） -->
+            <svg id="profile-orbit-svg" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible;">
+              <defs>
+                <path id="orbit-outer" d="" />
+                <path id="orbit-inner" d="" />
+              </defs>
+              <!-- 外側のサークルテキスト（時計回り） -->
+              <text font-size="9" fill="#111" font-family="'LINE Seed JP', sans-serif" letter-spacing="1">
+                <textPath href="#orbit-outer" startOffset="0%">
+                  ${circleText}${circleText}
+                </textPath>
+              </text>
+              <!-- 内側のサークルテキスト（反時計回り） -->
+              <text font-size="8" fill="#555" font-family="'LINE Seed JP', sans-serif" letter-spacing="0.5">
+                <textPath href="#orbit-inner" startOffset="50%">
+                  ${circleText}
+                </textPath>
+              </text>
+            </svg>
 
-          <!-- 中央の黒枠ポートレートダイアグラム写真 -->
-          <div class="relative bg-white border border-black p-1 shadow-sm mb-8 max-w-[240px] w-full aspect-[3/4] flex items-center justify-center overflow-hidden">
-            <canvas id="profile-face-canvas" class="block w-full h-full object-contain"></canvas>
-
-            <!-- 画像上の注釈ナンバーオーバーレイ (ミニマルダイアグラム風) -->
-            <div class="absolute inset-0 pointer-events-none font-mono text-[9px] text-black font-bold">
-              <span class="absolute top-[12%] left-[18%]">1</span>
-              <span class="absolute top-[20%] left-[28%]">2</span>
-              <span class="absolute top-[8%] left-[48%]">3</span>
-              <span class="absolute top-[18%] left-[54%]">5</span>
-              <span class="absolute top-[18%] left-[62%]">6</span>
-              <span class="absolute top-[28%] left-[80%]">24</span>
-              <span class="absolute top-[40%] left-[12%]">10</span>
-              <span class="absolute top-[48%] left-[20%]">14</span>
-              <span class="absolute top-[52%] left-[48%] font-black underline">15</span>
-              <span class="absolute top-[52%] left-[56%]">16</span>
-              <span class="absolute top-[75%] right-[15%]">29</span>
+            <!-- 中央の顔（ふわふわ浮遊） -->
+            <div class="relative z-10 flex flex-col items-center justify-center">
+              <canvas id="profile-face-canvas" style="width:160px;height:160px;display:block;border-radius:50%;overflow:hidden;"></canvas>
+              <!-- 顔登録ボタン（小） -->
+              <button id="btn-recreate-vibe" class="mt-4 px-5 py-2 bg-black text-white text-[11px] font-bold rounded-full hover:bg-zinc-700 active:scale-95 transition-all">
+                ${t.btnRecreateVibe}
+              </button>
             </div>
+
           </div>
-
-          <!-- 下部タイポグラフィ (name : dasha / age : 25 スタイル) -->
-          <div class="w-full max-w-sm flex flex-col items-center mb-8 font-mono">
-            <div class="flex items-center gap-2 text-lg font-normal tracking-wide">
-              <span>name</span>
-              <span class="font-bold">:</span>
-              <span class="font-bold text-xl">anon_${anonId}</span>
-            </div>
-            <div class="flex items-center gap-2 text-lg font-normal tracking-wide -mt-1">
-              <span>age</span>
-              <span class="font-bold">:</span>
-              <span class="font-bold text-xl">${burnStats.totalBurned + 20}</span>
-            </div>
-          </div>
-
-          <!-- エディトリアル・ポエムテキスト文章 -->
-          <div class="w-full max-w-sm text-center text-xs text-zinc-700 leading-relaxed font-sans space-y-3 mb-8 px-2 font-medium">
-            <p class="tracking-wide">
-              この記録は — 私の感情のヴィジュアル・ダイアリー。
-            </p>
-            <p class="tracking-wide text-zinc-600">
-              浄化指数 : <span class="font-bold text-black">${burnStats.totalBurned}</span> / 送った合掌 : <span class="font-bold text-black">${burnStats.gasshoGiven}</span> / 灰の重量 : <span class="font-bold text-black">${burnStats.ashWeight}</span>
-            </p>
-            <p class="text-[11px] text-zinc-500 leading-normal pt-1">
-              思考・歪み・感情のパラメータをひとつの顔のメッシュへと結実させ、手放すための探索空間 :)
-            </p>
-          </div>
-
-          <!-- 再設定ボタン -->
-          <button id="btn-recreate-vibe" class="w-full max-w-xs py-3 border border-black bg-black text-white text-xs font-bold rounded-full hover:bg-zinc-800 transition-colors shadow-xs">
-            ${t.btnRecreateVibe}
-          </button>
-
         </div>
+
+        <style>
+          @keyframes orbit-rotate-cw {
+            from { transform: rotate(0deg); }
+            to   { transform: rotate(360deg); }
+          }
+          @keyframes orbit-rotate-ccw {
+            from { transform: rotate(0deg); }
+            to   { transform: rotate(-360deg); }
+          }
+          @keyframes face-float {
+            0%, 100% { transform: translateY(0px) rotate(-1deg); }
+            50%      { transform: translateY(-10px) rotate(1deg); }
+          }
+          #profile-face-canvas {
+            animation: face-float 4s ease-in-out infinite;
+          }
+          #orbit-outer-group {
+            transform-origin: center;
+            animation: orbit-rotate-cw 22s linear infinite;
+          }
+          #orbit-inner-group {
+            transform-origin: center;
+            animation: orbit-rotate-ccw 15s linear infinite;
+          }
+        </style>
       `;
     }
 
@@ -1664,19 +1712,24 @@
         let lastPointerY = 0;
 
         // 2Dスクリーン座標 → 3D球体表面座標への近似変換
+        // ※ Three.js の球体は rotation.y = -PI/2 でテクスチャが -90 度回転している
+        // screenTo3D は表示上の x 座標をそのまま使い、右側でも正しく当たり判定するため
+        // スクリーン座標系をキャンバス内比率で完全に計算する
         const screenTo3D = (clientX, clientY) => {
           const rect = faceCanvas.getBoundingClientRect();
+          // キャンバス中心からの正規化オフセット (-1 ~ +1)
           const nx = ((clientX - rect.left) / rect.width) * 2 - 1;
           const ny = -(((clientY - rect.top) / rect.height) * 2 - 1);
 
-          const sphereScreenRadius = 0.55;
+          // 表示されている球体のスクリーン半径比（Three.js FOV 45°, z=3.6, 半径1.2 から計算）
+          const sphereScreenRadius = 0.58;
           const sx = nx / sphereScreenRadius;
           const sy = ny / sphereScreenRadius;
           const r2 = sx * sx + sy * sy;
 
-          if (r2 > 1.0) return null;
-
-          const sz = Math.sqrt(1.0 - r2);
+          if (r2 > 1.02) return null; // 球体外（少し余裕を持たせる）
+          const rClamped = Math.min(r2, 1.0);
+          const sz = Math.sqrt(1.0 - rClamped);
           return {
             x3d: sx * 1.2,
             y3d: sy * 1.2,
@@ -1765,7 +1818,8 @@
       if (toBurnBtn) {
         toBurnBtn.onclick = () => {
           soundEngine.playSubtleClick();
-          currentStep = 'solo_burn';
+          // 今どんな気分？→顔登録ページへ
+          currentStep = 'profile';
           renderApp();
         };
       }
@@ -1956,7 +2010,12 @@
 
       const navProfile = document.getElementById('nav-profile');
       if (navProfile) {
-        navProfile.onclick = () => { currentStep = 'profile'; soundEngine.playSubtleClick(); renderApp(); };
+        navProfile.onclick = () => {
+          soundEngine.playSubtleClick();
+          // マイページ → まず今どんな気分？ → 顔を登録
+          currentStep = 'vibe_check';
+          renderApp();
+        };
       }
 
       document.querySelectorAll('.btn-gassho').forEach(btn => {
