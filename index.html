@@ -42,7 +42,7 @@
 
     html, body {
       height: 100%;
-      height: 100dvh; /* Dynamic Viewport Height でモバイルSafariブラウザバー問題完全解決 */
+      height: 100dvh;
       background-color: #FFFFFF;
       color: #0F1419;
       font-family: 'Noto Sans', 'Noto Sans JP', sans-serif;
@@ -51,13 +51,13 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* 掲示板（タイムライン）以外は縦スクロールを完全に防止して1画面に完璧納める */
+    /* 掲示板（タイムライン）以外は縦スクロール禁止 */
     body.no-scroll {
       overflow-y: hidden;
       touch-action: none;
     }
 
-    /* 全画面ジャストフィット用コンテナ (100dvh & padding safe area) */
+    /* 全画面ジャストフィット用コンテナ */
     .screen-container {
       display: flex;
       flex-direction: column;
@@ -213,6 +213,11 @@
       canvas.height = 300;
       const ctx = canvas.getContext('2d');
 
+      // 背景は白（顔切り抜き用）
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, 300, 300);
+
+      // 人肌のグラデーションベース
       const skinGrad = ctx.createRadialGradient(150, 150, 20, 150, 150, 140);
       skinGrad.addColorStop(0, '#FFE4D6');
       skinGrad.addColorStop(0.7, '#F7D0BC');
@@ -222,11 +227,13 @@
       ctx.arc(150, 150, 130, 0, Math.PI * 2);
       ctx.fill();
 
+      // 髪の毛
       ctx.fillStyle = '#2B2321';
       ctx.beginPath();
       ctx.arc(150, 130, 132, Math.PI * 1.1, Math.PI * 1.9);
       ctx.fill();
 
+      // 目
       ctx.fillStyle = '#1F1A17';
       ctx.beginPath(); ctx.ellipse(105, 140, 14, 8, 0, 0, Math.PI * 2); ctx.fill();
       ctx.beginPath(); ctx.ellipse(195, 140, 14, 8, 0, 0, Math.PI * 2); ctx.fill();
@@ -234,9 +241,11 @@
       ctx.beginPath(); ctx.arc(108, 138, 4, 0, Math.PI * 2); ctx.fill();
       ctx.beginPath(); ctx.arc(198, 138, 4, 0, Math.PI * 2); ctx.fill();
 
+      // 鼻
       ctx.strokeStyle = '#D49E85'; ctx.lineWidth = 3;
       ctx.beginPath(); ctx.moveTo(150, 145); ctx.lineTo(147, 175); ctx.lineTo(155, 177); ctx.stroke();
 
+      // 口
       ctx.strokeStyle = '#C96F68'; ctx.lineWidth = 4;
       ctx.beginPath(); ctx.arc(150, 195, 18, 0.1, Math.PI - 0.1); ctx.stroke();
 
@@ -491,8 +500,8 @@
       ashWeight: '1.4kg'
     };
 
-    // --- POLA APEXスタイル描画 ---
-    function drawMinimalDistortedFace(canvas, vibesData, showMetrics = true, customPhotoImg = null) {
+    // --- 【POLA APEX本家完全再現】メッシュ変形＆顔パーツアナトミー歪みエンジン ---
+    function drawPolaApexMeshDistortedFace(canvas, vibesData, showMetrics = true, customPhotoImg = null) {
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
       const width = canvas.width;
@@ -504,7 +513,8 @@
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, width, height);
 
-      const radiusMax = width * 0.36;
+      // 背景の薄いガイド円
+      const radiusMax = width * 0.38;
       ctx.strokeStyle = '#EBEBEF';
       ctx.lineWidth = 1;
       [0.25, 0.5, 0.75, 1.0].forEach(r => {
@@ -537,75 +547,47 @@
 
       const vibeValues = [anger, unfairness, voidVal, envy, sadness];
 
-      let polygonVertices = [];
-      const numPoints = 15;
-      for (let i = 0; i < numPoints; i++) {
-        const theta = (i / numPoints) * Math.PI * 2 - Math.PI / 2;
-        const sector = (theta + Math.PI / 2 + Math.PI * 2) % (Math.PI * 2);
-        const sectorIdx = Math.floor(sector / (Math.PI * 2 / 5)) % 5;
-        const nextSectorIdx = (sectorIdx + 1) % 5;
-        const ratio = (sector % (Math.PI * 2 / 5)) / (Math.PI * 2 / 5);
-
-        const currentVibe = vibeValues[sectorIdx];
-        const nextVibe = vibeValues[nextSectorIdx];
-        const interpolatedVibe = currentVibe * (1 - ratio) + nextVibe * ratio;
-
-        let spike = (i % 3 === 0) ? (1 + interpolatedVibe * 0.4) : (0.85 + interpolatedVibe * 0.2);
-        let r = (width * 0.18) + (radiusMax * 0.55 * interpolatedVibe * spike);
-
-        polygonVertices.push({
-          x: cx + Math.cos(theta) * r,
-          y: cy + Math.sin(theta) * r
-        });
-      }
+      // 5頂点（顔の輪郭頂点）
+      let poly5Points = angles.map((a, i) => {
+        const v = vibeValues[i];
+        const r = radiusMax * (0.4 + v * 0.6);
+        return { x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r };
+      });
 
       const activePhoto = customPhotoImg || capturedPhotoImg || fallbackUserFaceImg;
 
-      if (activePhoto) {
-        ctx.save();
-        ctx.beginPath();
-        polygonVertices.forEach((v, idx) => {
-          if (idx === 0) ctx.moveTo(v.x, v.y);
-          else ctx.lineTo(v.x, v.y);
-        });
-        ctx.closePath();
-        ctx.clip();
+      if (activePhoto && activePhoto.complete) {
+        // オフスクリーンCanvasで三角メッシュ変形ワープを描画
+        const srcW = activePhoto.width || 300;
+        const srcH = activePhoto.height || 300;
 
-        const imgAspect = (activePhoto.width || 300) / (activePhoto.height || 300);
-        let drawW = width * 0.9;
-        let drawH = drawW / imgAspect;
-        if (drawH < height * 0.9) {
-          drawH = height * 0.9;
-          drawW = drawH * imgAspect;
+        // 元画像の顔アナトミー参照点
+        const srcCenter = { x: srcW / 2, y: srcH / 2 };
+        const src5Points = angles.map(a => ({
+          x: srcCenter.x + Math.cos(a) * (srcW * 0.42),
+          y: srcCenter.y + Math.sin(a) * (srcH * 0.42)
+        }));
+
+        // 5つの三角メッシュ分割（中心点 ＋ 5つの外周頂点）
+        for (let i = 0; i < 5; i++) {
+          const next = (i + 1) % 5;
+          const sTriangle = [srcCenter, src5Points[i], src5Points[next]];
+          const dTriangle = [{ x: cx, y: cy }, poly5Points[i], poly5Points[next]];
+
+          drawTexturedTriangle(ctx, activePhoto, sTriangle, dTriangle);
         }
 
-        ctx.drawImage(activePhoto, cx - drawW / 2, cy - drawH / 2, drawW, drawH);
-        ctx.restore();
-
+        // 外周にPOLA APEX特有の細い黒エッジを描画
         ctx.beginPath();
-        polygonVertices.forEach((v, idx) => {
-          if (idx === 0) ctx.moveTo(v.x, v.y);
-          else ctx.lineTo(v.x, v.y);
+        poly5Points.forEach((p, idx) => {
+          if (idx === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
         });
         ctx.closePath();
         ctx.strokeStyle = '#111111';
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 1.5;
         ctx.stroke();
       }
-
-      ctx.beginPath();
-      vibeValues.forEach((v, idx) => {
-        const a = angles[idx];
-        const r = radiusMax * (0.25 + v * 0.75);
-        const px = cx + Math.cos(a) * r;
-        const py = cy + Math.sin(a) * r;
-        if (idx === 0) ctx.moveTo(px, py);
-        else ctx.lineTo(px, py);
-      });
-      ctx.closePath();
-      ctx.strokeStyle = '#111111';
-      ctx.lineWidth = 1;
-      ctx.stroke();
 
       if (showMetrics) {
         ctx.fillStyle = '#111111';
@@ -622,6 +604,45 @@
           ctx.fillText(l.text, l.x, l.y);
         });
       }
+    }
+
+    // Canvas 2D アフィン変換によるテクスチャ三角メッシュ描画（リアル顔のグニャグニャ変形ワープ）
+    function drawTexturedTriangle(ctx, img, s, d) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(d[0].x, d[0].y);
+      ctx.lineTo(d[1].x, d[1].y);
+      ctx.lineTo(d[2].x, d[2].y);
+      ctx.closePath();
+      ctx.clip();
+
+      const x0 = s[0].x, y0 = s[0].y;
+      const x1 = s[1].x, y1 = s[1].y;
+      const x2 = s[2].x, y2 = s[2].y;
+
+      const u0 = d[0].x, v0 = d[0].y;
+      const u1 = d[1].x, v1 = d[1].y;
+      const u2 = d[2].x, v2 = d[2].y;
+
+      const delta = (x1 - x0) * (y2 - y0) - (x2 - x0) * (y1 - y0);
+      if (Math.abs(delta) < 0.0001) {
+        ctx.restore();
+        return;
+      }
+
+      const deltaU1 = u1 - u0, deltaU2 = u2 - u0;
+      const deltaV1 = v1 - v0, deltaV2 = v2 - v0;
+
+      const a = (deltaU1 * (y2 - y0) - deltaU2 * (y1 - y0)) / delta;
+      const b = (deltaV1 * (y2 - y0) - deltaV2 * (y1 - y0)) / delta;
+      const c = (deltaU2 * (x1 - x0) - deltaU1 * (x2 - x0)) / delta;
+      const dVal = (deltaV2 * (x1 - x0) - deltaV1 * (x2 - x0)) / delta;
+      const e = u0 - a * x0 - c * y0;
+      const f = v0 - b * x0 - dVal * y0;
+
+      ctx.transform(a, b, c, dVal, e, f);
+      ctx.drawImage(img, 0, 0);
+      ctx.restore();
     }
 
     // --- メインレンダリング ---
@@ -674,9 +695,9 @@
       if (currentStep === 'vibe_check') {
         const faceCanvas = document.getElementById('vibe-face-canvas');
         if (faceCanvas) {
-          faceCanvas.width = 190;
-          faceCanvas.height = 190;
-          drawMinimalDistortedFace(faceCanvas, vibes, true, capturedPhotoImg || fallbackUserFaceImg);
+          faceCanvas.width = 200;
+          faceCanvas.height = 200;
+          drawPolaApexMeshDistortedFace(faceCanvas, vibes, true, capturedPhotoImg || fallbackUserFaceImg);
         }
       } else if (currentStep === 'chaos_gallery') {
         posts.forEach(post => {
@@ -684,7 +705,7 @@
           if (cardCanvas) {
             cardCanvas.width = 40;
             cardCanvas.height = 40;
-            drawMinimalDistortedFace(cardCanvas, post.authorVibe, false, post.customPhoto);
+            drawPolaApexMeshDistortedFace(cardCanvas, post.authorVibe, false, post.customPhoto);
           }
         });
 
@@ -699,7 +720,7 @@
         if (profileCanvas) {
           profileCanvas.width = 180;
           profileCanvas.height = 180;
-          drawMinimalDistortedFace(profileCanvas, vibes, true, capturedPhotoImg || fallbackUserFaceImg);
+          drawPolaApexMeshDistortedFace(profileCanvas, vibes, true, capturedPhotoImg || fallbackUserFaceImg);
         }
       }
 
@@ -708,12 +729,12 @@
         if (modalCanvas) {
           modalCanvas.width = 40;
           modalCanvas.height = 40;
-          drawMinimalDistortedFace(modalCanvas, selectedPostModal.authorVibe, false, selectedPostModal.customPhoto);
+          drawPolaApexMeshDistortedFace(modalCanvas, selectedPostModal.authorVibe, false, selectedPostModal.customPhoto);
         }
       }
     }
 
-    // --- STEP 0: ロード / オープニング画面 (100dvh + flex配置で上下バー干渉ゼロ化) ---
+    // --- STEP 0: ロード / オープニング画面 ---
     function renderStep0Intro() {
       const t = i18n[currentLang];
       return `
@@ -756,9 +777,8 @@
             </div>
           </div>
 
-          <!-- ボタンはブラウザ下部ツールバーより安全な位置にflex自動配置 -->
           <div class="w-full flex justify-center pb-2">
-            <button id="btn-start-app" class="w-13 h-13 w-12 h-12 bg-black text-white font-bold text-xl rounded-full hover:bg-zinc-800 hover:scale-105 active:scale-95 transition-all flex items-center justify-center">
+            <button id="btn-start-app" class="w-12 h-12 bg-black text-white font-bold text-xl rounded-full hover:bg-zinc-800 hover:scale-105 active:scale-95 transition-all flex items-center justify-center">
               <span>→</span>
             </button>
           </div>
@@ -767,7 +787,7 @@
       `;
     }
 
-    // --- STEP 1: 自分の感情設定 (100dvh + flex配置) ---
+    // --- STEP 1: 自分の感情設定 ---
     function renderStep1VibeCheck() {
       const t = i18n[currentLang];
       return `
@@ -820,7 +840,7 @@
       `;
     }
 
-    // --- STEP 2: 焚き上げたいこと (100dvh + flex配置) ---
+    // --- STEP 2: 焚き上げたいこと ---
     function renderStep2SoloBurn() {
       const t = i18n[currentLang];
       return `
@@ -1205,7 +1225,7 @@
 
           const faceCanvas = document.getElementById('vibe-face-canvas');
           if (faceCanvas) {
-            drawMinimalDistortedFace(faceCanvas, vibes, true, capturedPhotoImg || fallbackUserFaceImg);
+            drawPolaApexMeshDistortedFace(faceCanvas, vibes, true, capturedPhotoImg || fallbackUserFaceImg);
           }
         };
       });
