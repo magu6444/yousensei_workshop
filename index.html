@@ -121,8 +121,8 @@
       flex-direction: column;
       justify-content: space-between;
       height: 100dvh;
-      padding-top: max(3.8rem, calc(env(safe-area-inset-top) + 2.8rem));
-      padding-bottom: max(3rem, calc(env(safe-area-inset-bottom) + 2rem));
+      padding-top: max(6.5rem, calc(env(safe-area-inset-top) + 5.5rem));
+      padding-bottom: max(4.2rem, calc(env(safe-area-inset-bottom) + 3.2rem));
       padding-left: 1.25rem;
       padding-right: 1.25rem;
       overflow: hidden;
@@ -1127,7 +1127,7 @@
     function renderStep3ChaosGallery() {
       const t = i18n[currentLang];
       return `
-        <div class="flex-1 flex flex-col fade-in bg-white min-h-screen">
+        <div class="flex-1 flex flex-col fade-in bg-white min-h-screen pt-24">
           <div class="divide-y divide-paper-border">
             ${posts.map((post) => `
               <div id="card-item-${post.id}" data-postid="${post.id}" class="x-post-card post-item-card flex gap-3.5 relative overflow-hidden">
