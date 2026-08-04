@@ -41,7 +41,8 @@
     }
 
     html, body {
-      height: 100vh;
+      height: 100%;
+      height: 100dvh; /* Dynamic Viewport Height でモバイルSafariブラウザバー問題完全解決 */
       background-color: #FFFFFF;
       color: #0F1419;
       font-family: 'Noto Sans', 'Noto Sans JP', sans-serif;
@@ -50,22 +51,23 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* 掲示板（タイムライン）以外は1画面ジャストフィット */
+    /* 掲示板（タイムライン）以外は縦スクロールを完全に防止して1画面に完璧納める */
     body.no-scroll {
       overflow-y: hidden;
       touch-action: none;
     }
 
-    /* タイトル画面ポスター (ボタン位置をかなり上へ引き上げ: pb-36) */
-    .intro-poster {
+    /* 全画面ジャストフィット用コンテナ (100dvh & padding safe area) */
+    .screen-container {
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      height: 100vh;
-      height: -webkit-fill-available;
-      background: #FFFFFF;
-      padding: 1.25rem 1.25rem calc(9rem + env(safe-area-inset-bottom)) 1.25rem;
-      letter-spacing: -0.02em;
+      height: 100dvh;
+      padding-top: max(1rem, env(safe-area-inset-top));
+      padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+      padding-left: 1.25rem;
+      padding-right: 1.25rem;
+      overflow: hidden;
     }
 
     .poster-row {
@@ -351,11 +353,7 @@
       { name: '知恵袋回答者A', handle: '@chiebukuro_master' },
       { name: '物申すマン', handle: '@monomosu_man' },
       { name: '匿名希望の社畜', handle: '@shachiku_0921' },
-      { name: '激辛ウォッチ民', handle: '@gekikara_sub' },
-      { name: '令和の毒舌王', handle: '@dokuzetsu_reiwa' },
-      { name: '限界派遣OL', handle: '@genkai_ol_sub' },
-      { name: '愚痴まとめアンテナ', handle: '@matome_antenna' },
-      { name: '理不尽絶対に許さないマン', handle: '@fuhai_hunter' }
+      { name: '激辛ウォッチ民', handle: '@gekikara_sub' }
     ];
 
     function generateContextualSympatheticEnjoReplies(userText) {
@@ -450,75 +448,18 @@
         gasshoCount: 512,
         tag: '#仕事 #理不尽',
         replies: generateContextualSympatheticEnjoReplies('「これ簡単な仕事だからさ〜」と軽いノリで丸投げしてきた営業マン。じゃあ今すぐこのコード書いてみてくださいよ。')
-      },
-      {
-        id: 'post-4',
-        userName: '通りすがりの特定班',
-        userId: '@tokutei_expert_09',
-        dateStr: '1時間前',
-        text: '自分は超サバサバ系って自称している人に限って、裏で人の顔色を窺い巧妙にマウントを取ってくる現象は何なんだ。',
-        authorVibe: { anger: 60, sadness: 40, unfairness: 70, envy: 30, void: 90 },
-        gasshoCount: 98,
-        tag: '#人間関係',
-        replies: generateContextualSympatheticEnjoReplies('自分は超サバサバ系って自称している人に限って、裏で人の顔色を窺い巧妙にマウントを取ってくる現象は何なんだ。')
-      },
-      {
-        id: 'post-5',
-        userName: '令和の知恵袋民',
-        userId: '@chiebukuro_2026',
-        dateStr: '2時間前',
-        text: '努力は報われるって言葉、報われた奴しか言ってない。今日も何も解決しないまま夜が更けていく。',
-        authorVibe: { anger: 20, sadness: 95, unfairness: 75, envy: 40, void: 80 },
-        gasshoCount: 341,
-        tag: '#自分 #社会',
-        replies: generateContextualSympatheticEnjoReplies('努力は報われるって言葉、報われた奴しか言ってない。今日も何も解決しないまま夜が更けていく。')
-      },
-      {
-        id: 'post-6',
-        userName: '理不尽絶対に許さないマン',
-        userId: '@fuhai_hunter_99',
-        dateStr: '3時間前',
-        text: '満員電車でリュック降ろさずに肘ぶつけてくるやつ、全員靴紐がほどけて転びますように。',
-        authorVibe: { anger: 85, sadness: 10, unfairness: 90, envy: 20, void: 50 },
-        gasshoCount: 176,
-        tag: '#社会 #理不尽',
-        replies: generateContextualSympatheticEnjoReplies('満員電車でリュック降ろさずに肘ぶつけてくるやつ、全員靴紐がほどけて転びますように。')
-      },
-      {
-        id: 'post-7',
-        userName: '深夜の愚痴吐きbot',
-        userId: '@guchi_night_07',
-        dateStr: '4時間前',
-        text: '「前の担当者はやってくれたんだけどな〜」とか言ってくるクライアント、じゃあその前担当に頼めや。',
-        authorVibe: { anger: 90, sadness: 15, unfairness: 95, envy: 10, void: 60 },
-        gasshoCount: 420,
-        tag: '#仕事 #理不尽',
-        replies: generateContextualSympatheticEnjoReplies('「前の担当者はやってくれたんだけどな〜」とか言ってくるクライアント、じゃあその前担当に頼めや。')
-      },
-      {
-        id: 'post-8',
-        userName: '社会の底辺から',
-        userId: '@sub_account_12',
-        dateStr: '5時間前',
-        text: '「残業するのが偉い」風潮の残る職場、定時退社する私を見る目線が冷たすぎて草も生えない。',
-        authorVibe: { anger: 75, sadness: 45, unfairness: 85, envy: 10, void: 70 },
-        gasshoCount: 231,
-        tag: '#仕事 #社会',
-        replies: generateContextualSympatheticEnjoReplies('「残業するのが偉い」風潮の残る職場、定時退社する私を見る目線が冷たすぎて草も生えない。')
       }
     ];
 
-    let postIndexCount = 9;
+    let postIndexCount = 4;
     const pastRantSamples = [
       '店員さんに横柄な態度取る人とデートした。一瞬で冷めてその場で会計別々にして帰ってきた。',
       'グループLINEで私以外で遊びに行った写真流れてきた時の、心臓がシュッて冷たくなる感覚。',
-      '体調不良で休んだのに「穴あけて申し訳ないと思わないの？」とか言ってきた先輩、一生インフルかかってろ。',
-      '打ち合わせで発言一切しないのに、終わった後に陰口だけ言ってくる奴、何しに来てんの？',
-      '「最近の若者は夢がない」とかドヤ顔で語るおじさん、夢を潰してんのあんたらだよ。'
+      '「残業するのが偉い」風潮の残る職場、定時退社する私を見る目線が冷たすぎて草も生えない。'
     ];
 
     function generateMorePosts() {
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < 2; i++) {
         const sampleText = pastRantSamples[Math.floor(Math.random() * pastRantSamples.length)];
         const tags = ['#仕事', '#人間関係', '#自分', '#社会', '#恋愛'];
         const tag1 = tags[Math.floor(Math.random() * tags.length)];
@@ -733,8 +674,8 @@
       if (currentStep === 'vibe_check') {
         const faceCanvas = document.getElementById('vibe-face-canvas');
         if (faceCanvas) {
-          faceCanvas.width = 210;
-          faceCanvas.height = 210;
+          faceCanvas.width = 190;
+          faceCanvas.height = 190;
           drawMinimalDistortedFace(faceCanvas, vibes, true, capturedPhotoImg || fallbackUserFaceImg);
         }
       } else if (currentStep === 'chaos_gallery') {
@@ -756,8 +697,8 @@
       } else if (currentStep === 'profile') {
         const profileCanvas = document.getElementById('profile-face-canvas');
         if (profileCanvas) {
-          profileCanvas.width = 200;
-          profileCanvas.height = 200;
+          profileCanvas.width = 180;
+          profileCanvas.height = 180;
           drawMinimalDistortedFace(profileCanvas, vibes, true, capturedPhotoImg || fallbackUserFaceImg);
         }
       }
@@ -772,21 +713,20 @@
       }
     }
 
-    // --- STEP 0: ロード / オープニング画面 (ボタン位置を画面中央寄り〜ツールバーかなり上へ引き上げ) ---
+    // --- STEP 0: ロード / オープニング画面 (100dvh + flex配置で上下バー干渉ゼロ化) ---
     function renderStep0Intro() {
       const t = i18n[currentLang];
       return `
-        <div class="intro-poster relative h-screen fade-in flex flex-col justify-between p-6 pb-36 bg-white select-none overflow-hidden">
+        <div class="screen-container bg-white select-none fade-in">
           
-          <div class="flex justify-end items-center pt-1">
+          <div class="flex justify-end items-center">
             <div class="flex items-center text-[9px] font-mono border border-zinc-300 rounded-full p-0.5 bg-zinc-50">
               <button id="lang-btn-jp" class="px-2 py-0.5 rounded-full ${currentLang === 'JP' ? 'bg-black text-white font-bold' : 'text-zinc-500'} transition-all">JP</button>
               <button id="lang-btn-en" class="px-2 py-0.5 rounded-full ${currentLang === 'EN' ? 'bg-black text-white font-bold' : 'text-zinc-500'} transition-all">EN</button>
             </div>
           </div>
 
-          <div class="my-auto space-y-1.5 md:space-y-3 py-1 flex flex-col items-center">
-            
+          <div class="my-auto space-y-1 md:space-y-3 py-1 flex flex-col items-center">
             <div class="poster-row">
               <span class="poster-char">${t.posterLine1[0]}</span>
               <span class="poster-char">${t.posterLine1[1]}</span>
@@ -814,12 +754,11 @@
               <span class="poster-char">${t.posterLine4[2]}</span>
               <span class="poster-char">${t.posterLine4[3]}</span>
             </div>
-
           </div>
 
-          <!-- スタートボタン位置をSafariボトムバーからかなり離して上に配置 (mb-16 / pb-8) -->
-          <div class="w-full mb-16 flex justify-center">
-            <button id="btn-start-app" class="w-14 h-14 bg-black text-white font-bold text-xl rounded-full hover:bg-zinc-800 hover:scale-105 active:scale-95 transition-all flex items-center justify-center">
+          <!-- ボタンはブラウザ下部ツールバーより安全な位置にflex自動配置 -->
+          <div class="w-full flex justify-center pb-2">
+            <button id="btn-start-app" class="w-13 h-13 w-12 h-12 bg-black text-white font-bold text-xl rounded-full hover:bg-zinc-800 hover:scale-105 active:scale-95 transition-all flex items-center justify-center">
               <span>→</span>
             </button>
           </div>
@@ -828,23 +767,23 @@
       `;
     }
 
-    // --- STEP 1: 自分の感情設定 (矢印ボタン位置向上 mb-16) ---
+    // --- STEP 1: 自分の感情設定 (100dvh + flex配置) ---
     function renderStep1VibeCheck() {
       const t = i18n[currentLang];
       return `
-        <div class="flex-1 flex flex-col items-center justify-between h-screen pt-6 pb-28 px-4 fade-in overflow-hidden">
-          <div class="text-center mt-1 mb-1">
-            <h2 class="text-xl font-black tracking-tight text-black">
+        <div class="screen-container bg-white fade-in">
+          <div class="text-center pt-1 mb-1">
+            <h2 class="text-lg font-black tracking-tight text-black">
               ${t.step1Title}
             </h2>
           </div>
 
-          <div class="w-full max-w-[65%] mx-auto bg-white flex flex-col items-center my-auto">
-            <div class="flex justify-center mb-2">
+          <div class="w-full max-w-[62%] mx-auto bg-white flex flex-col items-center my-auto">
+            <div class="flex justify-center mb-1.5">
               <canvas id="vibe-face-canvas" class="block max-w-full h-auto cursor-pointer"></canvas>
             </div>
 
-            <div class="w-full space-y-2 text-xs font-bold">
+            <div class="w-full space-y-1.5 text-xs font-bold">
               <div>
                 <div class="text-black mb-0.5 font-bold">${t.anger}</div>
                 <input type="range" min="0" max="100" value="${vibes.anger}" data-key="anger" class="vibe-slider w-full cursor-pointer">
@@ -872,8 +811,8 @@
             </div>
           </div>
 
-          <div class="w-full flex justify-center mb-12">
-            <button id="btn-to-burn-step" class="w-14 h-14 bg-black text-white text-xl font-bold rounded-full hover:bg-zinc-800 hover:scale-105 active:scale-95 transition-all flex items-center justify-center">
+          <div class="w-full flex justify-center pb-2">
+            <button id="btn-to-burn-step" class="w-12 h-12 bg-black text-white text-xl font-bold rounded-full hover:bg-zinc-800 hover:scale-105 active:scale-95 transition-all flex items-center justify-center">
               <span>→</span>
             </button>
           </div>
@@ -881,36 +820,36 @@
       `;
     }
 
-    // --- STEP 2: 焚き上げたいこと (🔥ボタン位置向上 mb-16) ---
+    // --- STEP 2: 焚き上げたいこと (100dvh + flex配置) ---
     function renderStep2SoloBurn() {
       const t = i18n[currentLang];
       return `
-        <div class="flex-1 flex flex-col justify-between h-screen pt-6 pb-28 px-4 fade-in overflow-hidden">
-          <div class="text-center mt-1 mb-1">
-            <h2 class="text-xl font-black tracking-tight text-black">
+        <div class="screen-container bg-white fade-in">
+          <div class="text-center pt-1 mb-1">
+            <h2 class="text-lg font-black tracking-tight text-black">
               ${t.step2Title}
             </h2>
-            <p class="text-xs text-zinc-500 mt-1 font-medium">
+            <p class="text-[11px] text-zinc-500 mt-0.5 font-medium">
               ${t.step2Sub}
             </p>
           </div>
 
           <div id="solo-burn-card" class="bg-white relative overflow-hidden max-w-[90%] mx-auto w-full my-auto">
-            <div class="mb-3 relative">
+            <div class="mb-2 relative">
               <textarea
                 id="rant-textarea"
                 maxlength="200"
                 placeholder="${t.placeholderRant}"
                 rows="4"
-                class="w-full bg-paper text-black p-3.5 border border-paper-border focus:border-black focus:outline-none font-bold text-xs leading-relaxed resize-none rounded-2xl"
+                class="w-full bg-paper text-black p-3 border border-paper-border focus:border-black focus:outline-none font-bold text-xs leading-relaxed resize-none rounded-2xl"
               >${rantText}</textarea>
-              <div class="text-right text-[10px] font-mono text-zinc-400 mt-1">
+              <div class="text-right text-[10px] font-mono text-zinc-400 mt-0.5">
                 <span id="char-count">${rantText.length}</span> / 200
               </div>
             </div>
 
-            <div class="mb-3">
-              <span class="block text-xs font-bold text-black mb-1.5">${t.hashtagLabel}</span>
+            <div class="mb-2">
+              <span class="block text-xs font-bold text-black mb-1">${t.hashtagLabel}</span>
               <div class="flex flex-wrap gap-1.5 font-bold text-xs items-center">
                 ${categoryTags.map(tag => {
                   const isSelected = selectedTags.includes(tag);
@@ -926,7 +865,7 @@
                     type="text"
                     id="new-tag-input"
                     placeholder="#タグ"
-                    class="w-18 px-2 py-0.5 text-xs border border-paper-border rounded-full focus:outline-none focus:border-black font-medium"
+                    class="w-16 px-2 py-0.5 text-xs border border-paper-border rounded-full focus:outline-none focus:border-black font-medium"
                   />
                   <button id="btn-add-tag" class="px-2 py-0.5 bg-zinc-200 text-black text-xs font-bold rounded-full hover:bg-black hover:text-white transition-colors">
                     +
@@ -936,10 +875,10 @@
             </div>
           </div>
 
-          <div class="w-full flex justify-center mb-12">
+          <div class="w-full flex justify-center pb-2">
             <button
               id="btn-execute-burn"
-              class="w-14 h-14 bg-black text-white text-2xl font-bold rounded-full hover:bg-zinc-800 hover:scale-105 active:scale-95 transition-all flex items-center justify-center cursor-pointer"
+              class="w-12 h-12 bg-black text-white text-xl font-bold rounded-full hover:bg-zinc-800 hover:scale-105 active:scale-95 transition-all flex items-center justify-center cursor-pointer"
             >
               <span>🔥</span>
             </button>
