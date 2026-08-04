@@ -902,9 +902,10 @@
       // --- 3D 球体テクスチャマッピング ＆ パンク・トゲトゲ・膨張変形エンジン ---
       const activePhoto = customPhotoImg || capturedPhotoImg || fallbackUserFaceImg;
 
-      // 各パラメータ（いらいら、理不尽、虚無、嫉妬、悲しい）の尖り・トゲトゲ・膨張係数
-      // 5頂点に向かってトゲトゲ（パンクな突起）と膨張（みよーんと伸びる）を動的合成
-      const numSteps = 72; // 細かいメッシュでトゲトゲ＆球体を滑らかに描画
+      // 初期状態（全パラメータデフォルト）は添付写真2枚目のような「まんまるな3D球体」で美しく表示
+      const isDefault = vibeValues.every(v => v === 0.5);
+
+      const numSteps = 72;
       const shapePath = [];
 
       for (let i = 0; i <= numSteps; i++) {
@@ -917,12 +918,14 @@
         const ratio = angleIdx - baseI;
         const interpolatedVibe = vibeValues[baseI] * (1 - ratio) + vibeValues[nextI] * ratio;
 
-        // トゲトゲ（パンク）スパイク効果：パラメータが強いと頂点付近が鋭利に尖る
-        const angleDiffFromVertex = Math.abs(ratio - 0.5);
-        const spikeFactor = Math.pow(1 - angleDiffFromVertex * 2, 2.5) * (interpolatedVibe * 0.45);
+        let rCurrent = radiusMax * 0.75; // 初期状態：まんまる球体
 
-        // 膨張（バルーン）効果＋スパイク（トゲトゲ）の合算半径
-        const rCurrent = radiusMax * (0.35 + interpolatedVibe * 0.55 + spikeFactor);
+        if (!isDefault) {
+          // トゲトゲ（パンク）スパイク効果：パラメータ操作で頂点付近が鋭利に尖って伸びる
+          const angleDiffFromVertex = Math.abs(ratio - 0.5);
+          const spikeFactor = Math.pow(1 - angleDiffFromVertex * 2, 2.5) * ((interpolatedVibe - 0.5) * 0.7);
+          rCurrent = radiusMax * (0.35 + interpolatedVibe * 0.55 + spikeFactor);
+        }
 
         const px = cx + Math.cos(theta) * rCurrent;
         const py = cy + Math.sin(theta) * rCurrent;
@@ -1005,27 +1008,27 @@
         ctx.restore();
       }
 
-      // 3. 3D球体のリアル光沢 ＆ 陰影レイヤー（球面に貼り付いた質感を再現）
+      // 3. 3D球体のリアル光沢 ＆ 陰影レイヤー（立体球面の影＆つるんとした質感）
       ctx.save();
       ctx.globalCompositeOperation = 'source-over';
 
-      // 球面の縁の影
+      // 球面の縁の自然な陰影（黒縁ラインではなく、立体的な陰影のみ）
       const innerShadow = ctx.createRadialGradient(
-        cx, cy, radiusMax * 0.4,
-        cx, cy, radiusMax * 1.25
+        cx, cy, radiusMax * 0.3,
+        cx, cy, radiusMax * 1.05
       );
       innerShadow.addColorStop(0, 'rgba(0, 0, 0, 0)');
-      innerShadow.addColorStop(0.65, 'rgba(100, 40, 20, 0.2)');
-      innerShadow.addColorStop(1, 'rgba(40, 10, 5, 0.55)');
+      innerShadow.addColorStop(0.7, 'rgba(80, 30, 15, 0.15)');
+      innerShadow.addColorStop(1, 'rgba(40, 10, 5, 0.4)');
       ctx.fillStyle = innerShadow;
       ctx.fillRect(0, 0, width, height);
 
-      // 球体表面の光沢ハイライト
+      // 球体表面の上品な光沢ハイライト
       const specHighlight = ctx.createRadialGradient(
-        cx - radiusMax * 0.35, cy - radiusMax * 0.4, 0,
-        cx - radiusMax * 0.35, cy - radiusMax * 0.4, radiusMax * 0.65
+        cx - radiusMax * 0.28, cy - radiusMax * 0.35, 0,
+        cx - radiusMax * 0.28, cy - radiusMax * 0.35, radiusMax * 0.6
       );
-      specHighlight.addColorStop(0, 'rgba(255, 255, 255, 0.6)');
+      specHighlight.addColorStop(0, 'rgba(255, 255, 255, 0.65)');
       specHighlight.addColorStop(0.5, 'rgba(255, 255, 255, 0.15)');
       specHighlight.addColorStop(1, 'rgba(255, 255, 255, 0)');
       ctx.fillStyle = specHighlight;
@@ -1033,17 +1036,6 @@
 
       ctx.restore();
       ctx.restore(); // クリッピング解除
-
-      // パンク・トゲトゲ輪郭線の描画
-      ctx.strokeStyle = '#111111';
-      ctx.lineWidth = showMetrics ? 3 : 2;
-      ctx.beginPath();
-      shapePath.forEach((p, idx) => {
-        if (idx === 0) ctx.moveTo(p.x, p.y);
-        else ctx.lineTo(p.x, p.y);
-      });
-      ctx.closePath();
-      ctx.stroke();
 
       if (showMetrics) {
         ctx.fillStyle = '#111111';
@@ -1792,7 +1784,6 @@
 
           if (activeKey) {
             vibes[activeKey] = val;
-            soundEngine.playSubtleClick();
             drawPolaApexMeshDistortedFace(faceCanvas, vibes, true, capturedPhotoImg || fallbackUserFaceImg);
           }
         };
