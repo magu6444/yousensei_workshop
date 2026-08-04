@@ -957,45 +957,56 @@
           -Math.PI / 2 + (Math.PI * 8 / 5)
         ];
 
+        // iPhoneタッチ操作に特化した変形（奥行きZ軸の歪み・トゲを出さず、手前X/Y平面上でピンポイントに引き伸ばし・へこませ）
+        // 初期状態（デフォルト）は添付写真1枚通りの綺麗で完全な「まんまる3D球体」
+        const geo = canvas._threeGeo;
+        const posAttr = geo.attributes.position;
+        const posArray = posAttr.array;
+        const initPos = canvas._threeInitialPos;
+
+        // 5つのパラメータ方向（いらいら、理不尽、虚無、嫉妬、悲しい）のスクリーン2D角度
+        const angles5 = [
+          -Math.PI / 2,
+          -Math.PI / 2 + (Math.PI * 2 / 5),
+          -Math.PI / 2 + (Math.PI * 4 / 5),
+          -Math.PI / 2 + (Math.PI * 6 / 5),
+          -Math.PI / 2 + (Math.PI * 8 / 5)
+        ];
+
         for (let i = 0; i < posArray.length; i += 3) {
           const x = initPos[i];
           const y = initPos[i + 1];
           const z = initPos[i + 2];
 
-          // 頂点までの距離と方向
-          const len = Math.sqrt(x * x + y * y + z * z);
-          if (len < 0.0001) continue;
+          // 初期位置のスクリーン平面2D角度（X, Y）
+          const angleXY = Math.atan2(y, x);
 
-          const vx = x / len;
-          const vy = y / len;
-          const angleXY = Math.atan2(vy, vx);
-
-          // 5つの各パラメータの方向に対する鋭利な「スパイク（ツンと引っ張られるトゲ）」の計算
-          let totalSpikeOffset = 0;
+          let offsetX = 0;
+          let offsetY = 0;
 
           angles5.forEach((targetAngle, idx) => {
             const vVal = vibeValues[idx]; // 0.1 ~ 1.0 (デフォルト 0.5)
             const intensity = (vVal - 0.5) * 2; // -0.8 ~ +1.0
 
-            if (intensity > 0.05) {
-              // パラメータ方向との角度差
+            if (Math.abs(intensity) > 0.02) {
               let diff = Math.abs(angleXY - targetAngle);
               if (diff > Math.PI) diff = Math.PI * 2 - diff;
 
-              // 鋭利な円錐状スパイク（棘鉄球のようにピンポイントでツンと尖って伸びる）
-              const coneWidth = 0.55; // トゲの根元の広さ
-              if (diff < coneWidth) {
-                const sharpness = Math.pow(1.0 - diff / coneWidth, 3.0);
-                totalSpikeOffset += intensity * sharpness * 0.9;
+              // iPhoneタッチ引っ張り・へこませ（写真1→写真2のような手前平面での局所的な顔歪み）
+              const pullRadius = 0.7; // タッチ対象範囲
+              if (diff < pullRadius) {
+                const pullWeight = Math.pow(1.0 - diff / pullRadius, 2.0);
+                // 指定方向へピンポイント引っ張り（伸び・へこみ）
+                offsetX += Math.cos(targetAngle) * intensity * pullWeight * 0.45;
+                offsetY += Math.sin(targetAngle) * intensity * pullWeight * 0.45;
               }
             }
           });
 
-          // 3D空間全方向（X, Y, Z）に一律でツンと突き出すスパイク変形
-          const finalScale = 1.0 + totalSpikeOffset;
-          posArray[i] = x * finalScale;
-          posArray[i + 1] = y * finalScale;
-          posArray[i + 2] = z * finalScale;
+          // 奥行きZ軸の歪みやスパイクは発生させず、X, Y 平面上で自然かつ有機的に引っ張る
+          posArray[i] = x + offsetX;
+          posArray[i + 1] = y + offsetY;
+          posArray[i + 2] = z; // Z軸は一定で3D球体の質感を保持
         }
 
         posAttr.needsUpdate = true;
@@ -1172,8 +1183,8 @@
     function renderStep0Intro() {
       const t = i18n[currentLang];
       return `
-        <div class="screen-container bg-white select-none fade-in">
-          <div class="h-4"></div>
+        <div id="btn-start-app" class="screen-container bg-white select-none fade-in cursor-pointer flex flex-col justify-between items-center pb-8 pt-4">
+          <div class="h-2"></div>
 
           <div class="my-auto py-2 w-full flex flex-col items-center justify-center">
             
@@ -1199,8 +1210,10 @@
               <div class="poster-cell"><span class="poster-char">${t.posterLine4[3]}</span></div>
             </div>
 
-          <div id="btn-start-app" class="w-full flex justify-center pb-2 cursor-pointer">
-            <span class="tap-entry-text text-[11px] font-bold tracking-[0.25em] text-zinc-400 uppercase">
+          </div>
+
+          <div class="w-full flex justify-center pb-4">
+            <span class="tap-entry-text text-[11px] font-bold tracking-[0.28em] text-zinc-400 uppercase">
               TAP ENTRY
             </span>
           </div>
