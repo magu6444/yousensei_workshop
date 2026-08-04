@@ -169,14 +169,14 @@
       overflow: hidden;
     }
 
-    /* ポスタータイトルの縦列ピタリ整列 ＆ 上下左右の行間・文字間を極限まで詰める（中央配置） */
+    /* ポスタータイトルの縦列整列 ＆ 行間詰めつつ全体を大きく画面真ん中に配置 */
     .poster-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       row-gap: 0.15rem;
-      column-gap: -6px;
+      column-gap: -8px;
       width: 100%;
-      max-width: 200px;
+      max-width: 270px;
       margin: 0 auto;
     }
 
@@ -190,7 +190,7 @@
 
     .poster-char {
       font-weight: 400 !important;
-      font-size: 13vw;
+      font-size: 17.5vw;
       color: #111111;
       font-family: 'LINE Seed Sans', 'LINE Seed JP', sans-serif !important;
       line-height: 1;
@@ -202,12 +202,12 @@
 
     @media (min-width: 500px) {
       .poster-char {
-        font-size: 3.8rem;
+        font-size: 5.2rem;
       }
     }
 
     .poster-emoji {
-      font-size: 11vw;
+      font-size: 15.5vw;
       line-height: 1;
       text-align: center;
       display: flex;
@@ -218,7 +218,7 @@
 
     @media (min-width: 500px) {
       .poster-emoji {
-        font-size: 3.2rem;
+        font-size: 4.5rem;
       }
     }
 
