@@ -105,7 +105,7 @@
       flex-direction: column;
       justify-content: space-between;
       height: 100dvh;
-      padding-top: max(2.5rem, calc(env(safe-area-inset-top) + 1.5rem));
+      padding-top: max(3.8rem, calc(env(safe-area-inset-top) + 2.8rem));
       padding-bottom: max(3rem, calc(env(safe-area-inset-bottom) + 2rem));
       padding-left: 1.25rem;
       padding-right: 1.25rem;
@@ -696,7 +696,7 @@
 
       ctx.clearRect(0, 0, width, height);
 
-      const radiusMax = width * (showMetrics ? 0.38 : 0.46);
+      const radiusMax = width * (showMetrics ? 0.32 : 0.46);
       const angles = [
         -Math.PI / 2,
         -Math.PI / 2 + (Math.PI * 2 / 5),
@@ -767,11 +767,11 @@
         ctx.fillStyle = '#111111';
         ctx.font = '700 24px "LINE Seed Sans", "LINE Seed JP", sans-serif';
         const labelPos = [
-          { text: 'いらいら', x: cx, y: cy - radiusMax - 16, align: 'center' },
-          { text: '理不尽', x: cx + radiusMax + 4, y: cy - 2, align: 'left' },
-          { text: '虚無', x: cx + radiusMax * 0.6, y: cy + radiusMax + 30, align: 'left' },
-          { text: '嫉妬', x: cx - radiusMax * 0.6, y: cy + radiusMax + 30, align: 'right' },
-          { text: '悲しい', x: cx - radiusMax - 4, y: cy - 2, align: 'right' },
+          { text: 'いらいら', x: cx, y: cy - radiusMax - 14, align: 'center' },
+          { text: '理不尽', x: cx + radiusMax + 12, y: cy + 4, align: 'left' },
+          { text: '虚無', x: cx + radiusMax * 0.55, y: cy + radiusMax + 30, align: 'left' },
+          { text: '嫉妬', x: cx - radiusMax * 0.55, y: cy + radiusMax + 30, align: 'right' },
+          { text: '悲しい', x: cx - radiusMax - 12, y: cy + 4, align: 'right' },
         ];
         labelPos.forEach(l => {
           ctx.textAlign = l.align;
@@ -860,8 +860,8 @@
               </svg>
             </button>
 
-            <button id="nav-create-burn" class="w-11 h-11 bg-black text-white rounded-full flex items-center justify-center text-2xl font-bold shadow-md hover:bg-zinc-800 active:scale-95 transition-all mx-3 flex-shrink-0">
-              ＋
+            <button id="nav-create-burn" class="w-11 h-11 bg-black text-white rounded-full flex items-center justify-center text-xl font-bold shadow-md hover:bg-zinc-800 active:scale-95 transition-all mx-3 flex-shrink-0">
+              🔥
             </button>
 
             <button id="nav-profile" class="flex-1 py-1 flex justify-center items-center ${currentStep === 'profile' ? 'text-black font-bold' : 'text-zinc-400'} hover:text-black transition-colors">
@@ -1037,7 +1037,7 @@
               <div class="w-full flex justify-center pt-2">
                 <button
                   id="btn-execute-burn"
-                  class="w-full py-4 bg-black text-white text-xs font-bold rounded-full hover:bg-zinc-800 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                  class="max-w-[200px] w-full py-3.5 bg-black text-white text-xs font-bold rounded-full hover:bg-zinc-800 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md mx-auto"
                 >
                   <span>🔥 焚き上げる</span>
                 </button>
@@ -1055,7 +1055,11 @@
         <div class="flex-1 flex flex-col fade-in bg-white min-h-screen">
           <div class="divide-y divide-paper-border">
             ${posts.map((post) => `
-              <div data-postid="${post.id}" class="x-post-card post-item-card flex gap-3.5">
+              <div id="card-item-${post.id}" data-postid="${post.id}" class="x-post-card post-item-card flex gap-3.5 relative overflow-hidden">
+                <div id="enjo-flame-overlay-${post.id}" class="absolute inset-0 bg-gradient-to-t from-red-600/30 via-amber-500/20 to-transparent pointer-events-none opacity-0 transition-opacity duration-300 flex items-center justify-center">
+                  <span class="text-3xl animate-bounce">🔥🔥🔥</span>
+                </div>
+
                 <div class="flex-shrink-0">
                   <div class="w-12 h-12 bg-white flex items-center justify-center">
                     <canvas id="card-canvas-${post.id}" class="block"></canvas>
@@ -1628,6 +1632,7 @@
 
       document.querySelectorAll('.btn-gassho').forEach(btn => {
         btn.onclick = (e) => {
+          e.stopPropagation();
           const postId = e.currentTarget.dataset.postid;
           soundEngine.playGasshoBell();
 
@@ -1638,6 +1643,26 @@
 
             const countSpan = document.getElementById(`gassho-count-${postId}`);
             if (countSpan) countSpan.innerText = post.gasshoCount;
+
+            // 🙏ボタンが10回押される（または10の倍数に達する）たびに、その投稿欄だけメラメラ炎上
+            if (post.gasshoCount % 10 === 0) {
+              soundEngine.playSoftBurn();
+              const overlay = document.getElementById(`enjo-flame-overlay-${postId}`);
+              const cardElem = document.getElementById(`card-item-${postId}`);
+              
+              if (overlay) {
+                overlay.style.opacity = '1';
+                if (cardElem) cardElem.classList.add('bg-amber-50');
+
+                // 本格全画面火炎物理シミュレーションも同時発動
+                triggerRealFireBurnSimulation(() => {});
+
+                setTimeout(() => {
+                  overlay.style.opacity = '0';
+                  if (cardElem) cardElem.classList.remove('bg-amber-50');
+                }, 2000);
+              }
+            }
           }
         };
       });
