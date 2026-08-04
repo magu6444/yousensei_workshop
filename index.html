@@ -604,82 +604,7 @@
       return dataUrl;
     }
 
-    function generateUniqueAccount(vibes, text) {
-      // 1. 感情の最大値（最も値の高いもの）を調べる
-      const emotionKeys = ['anger', 'sadness', 'unfairness', 'envy', 'void'];
-      let maxEmotion = 'void';
-      let maxVal = -1;
-      
-      emotionKeys.forEach(key => {
-        const val = vibes[key] || 0;
-        if (val > maxVal) {
-          maxVal = val;
-          maxEmotion = key;
-        }
-      });
-      
-      // 最大感情に応じた形容詞
-      let adjective = '穏やかな';
-      if (maxVal > 20) {
-        switch (maxEmotion) {
-          case 'anger':
-            adjective = '爆発寸前の';
-            break;
-          case 'sadness':
-            adjective = '涙目の';
-            break;
-          case 'unfairness':
-            adjective = '理不尽に抗う';
-            break;
-          case 'envy':
-            adjective = '隣を気にする';
-            break;
-          case 'void':
-            adjective = 'からっぽの';
-            break;
-        }
-      }
 
-      // 2. テキストの特徴（文字数やキーワード）から名詞を決定
-      let noun = '修行僧';
-      const textLen = text.length;
-      
-      if (text.includes('仕事') || text.includes('会社') || text.includes('上司') || text.includes('同僚')) {
-        noun = '労働者';
-      } else if (text.includes('疲') || text.includes('ねむ') || text.includes('眠')) {
-        noun = 'おやすみ羊';
-      } else if (text.includes('恋愛') || text.includes('好き') || text.includes('彼') || text.includes('彼女')) {
-        noun = 'ロマンチスト';
-      } else if (text.includes('お金') || text.includes('金') || text.includes('財布') || text.includes('買')) {
-        noun = '買い物袋';
-      } else if (textLen > 120) {
-        noun = 'マシンガン';
-      } else if (textLen > 60) {
-        noun = '語り部';
-      } else if (textLen < 20) {
-        noun = 'ポエマー';
-      } else {
-        const nouns = ['うさぎ', 'プリン', '流れ星', '旅人', 'こたつ犬', '匿名キリン'];
-        const seed = (textLen + maxVal) % nouns.length;
-        noun = nouns[seed];
-      }
-
-      const userName = `${adjective}${noun}`;
-      
-      // 3. IDの決定
-      const emotionEng = {
-        anger: 'angry',
-        sadness: 'sad',
-        unfairness: 'unlucky',
-        envy: 'jealous',
-        void: 'empty'
-      };
-      const typeStr = maxVal > 20 ? emotionEng[maxEmotion] : 'calm';
-      const randNum = Math.floor(100 + Math.random() * 900); // 100-999
-      const userId = `@${typeStr}_${randNum}`;
-
-      return { userName, userId };
-    }
 
     function pushVibesHistory() {
       const copy = { ...vibes };
@@ -1224,25 +1149,35 @@
                 顔写真を撮影する
               </h2>
               <p class="text-[11px] font-bold text-zinc-400 mt-1.5 uppercase tracking-wider">
-                人型の枠に合わせて撮影してください
+                目・鼻・口の位置に合わせてください
               </p>
             </div>
 
-            <!-- カメラプレビュー + 人型フレーム -->
+            <!-- カメラプレビュー + 顔ガイド -->
             <div class="w-full flex-1 flex flex-col items-center justify-center relative my-auto">
               <div class="relative w-[280px] h-[280px] rounded-full overflow-hidden border-2 border-black bg-zinc-100 shadow-inner flex items-center justify-center">
                 <!-- ビデオ要素 (表示用) -->
                 <video id="vibe-camera-preview" autoplay playsinline class="absolute inset-0 w-full h-full object-cover scale-x-[-1]"></video>
                 
-                <!-- 人型フレーム (オーバーレイ) -->
+                <!-- 顔ガイドオーバーレイ: 眉・目・鼻・口 -->
                 <div class="absolute inset-0 pointer-events-none flex items-center justify-center">
-                  <svg class="w-full h-full text-black/35" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <!-- 人型のシルエット -->
-                    <circle cx="50" cy="38" r="16" stroke="currentColor" stroke-width="2" />
-                    <path d="M22 84 C22 62, 32 58, 50 58 C68 58, 78 62, 78 84" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                    <!-- センターガイドの破線 -->
-                    <line x1="50" y1="5" x2="50" y2="95" stroke="currentColor" stroke-width="1" stroke-dasharray="2,4" />
-                    <line x1="5" y1="50" x2="95" y2="50" stroke="currentColor" stroke-width="1" stroke-dasharray="2,4" />
+                  <svg class="w-full h-full text-white" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- 左眉 -->
+                    <path d="M28 38 Q35 34 42 37" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" opacity="0.7"/>
+                    <!-- 右眉 -->
+                    <path d="M58 37 Q65 34 72 38" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" opacity="0.7"/>
+                    <!-- 左目 -->
+                    <ellipse cx="35" cy="44" rx="5" ry="3" stroke="currentColor" stroke-width="2" opacity="0.7"/>
+                    <!-- 右目 -->
+                    <ellipse cx="65" cy="44" rx="5" ry="3" stroke="currentColor" stroke-width="2" opacity="0.7"/>
+                    <!-- 鼻 -->
+                    <path d="M50 44 L50 57 M44 60 Q50 63 56 60" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
+                    <!-- 口 -->
+                    <path d="M38 72 Q50 80 62 72" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" opacity="0.7"/>
+                    <!-- センターライン(縦) -->
+                    <line x1="50" y1="5" x2="50" y2="95" stroke="currentColor" stroke-width="0.8" stroke-dasharray="2,5" opacity="0.4"/>
+                    <!-- センターライン(横・目の高さ) -->
+                    <line x1="10" y1="44" x2="90" y2="44" stroke="currentColor" stroke-width="0.8" stroke-dasharray="2,5" opacity="0.4"/>
                   </svg>
                 </div>
               </div>
@@ -1259,9 +1194,26 @@
       } else {
         // 撮影完了後の調整画面
         const activePhotoSrc = capturedPhotoImg ? capturedPhotoImg.src : 'images/face_preset_0.jpg';
+        // ボトムナビの高さ分を除いた領域に収める
         return `
-          <div class="screen-container bg-white fade-in select-none" style="padding-top: max(1.2rem, calc(env(safe-area-inset-top) + 0.5rem)); overflow-y: hidden; height: 100vh; display: flex; flex-direction: column; justify-content: space-between;">
-            <div class="text-center pt-0 mb-1 flex-shrink-0">
+          <div class="bg-white fade-in select-none" style="
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            padding-top: max(2.5rem, calc(env(safe-area-inset-top) + 2rem));
+            padding-bottom: max(5.5rem, calc(env(safe-area-inset-bottom) + 5rem));
+            padding-left: 1rem;
+            padding-right: 1rem;
+            gap: 0;
+            overflow: hidden;
+          ">
+
+            <!-- タイトル -->
+            <div class="text-center flex-shrink-0 mb-2">
               <h2 style="font-family: 'LINE Seed Sans', 'LINE Seed JP', sans-serif; font-weight: 700; font-size: 5.5vw; color: #111; line-height: 1.1; letter-spacing: -0.02em;">
                 ${t.step1Title}
               </h2>
@@ -1270,38 +1222,34 @@
               </p>
             </div>
 
-            <!-- 切り抜いた顔の表示 (五角形) -->
-            <div class="w-full flex flex-col items-center justify-center my-1 flex-shrink-0">
-              <div class="relative w-[130px] h-[130px] flex items-center justify-center bg-zinc-50 border border-zinc-100" style="clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);">
-                <img id="vibe-face-preview-img" src="${activePhotoSrc}" class="w-[110px] h-[110px] object-cover shadow-md" style="clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%); ${getDistortionStyle(vibes)}" />
+            <!-- 顔写真（五角形）+ HISTORY -->
+            <div class="flex-shrink-0 flex flex-col items-center gap-2 mb-2">
+              <div class="w-[100px] h-[100px] flex items-center justify-center bg-zinc-50" style="clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);">
+                <img id="vibe-face-preview-img" src="${activePhotoSrc}" class="w-full h-full object-cover" style="clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%); ${getDistortionStyle(vibes)}" />
+              </div>
+              <div class="flex items-center gap-5">
+                <button id="btn-undo" class="w-10 h-7 hover:scale-110 active:scale-90 transition-all flex items-center justify-center cursor-pointer">
+                  <img src="images/btn_hand_left.png" alt="Undo" class="w-full h-full object-contain" />
+                </button>
+                <span class="text-[9px] font-mono font-bold text-zinc-400 tracking-wider">HISTORY</span>
+                <button id="btn-redo" class="w-10 h-7 hover:scale-110 active:scale-90 transition-all flex items-center justify-center cursor-pointer">
+                  <img src="images/btn_hand_right.png" alt="Redo" class="w-full h-full object-contain" />
+                </button>
               </div>
             </div>
 
-            <!-- Do / Undo 操作エリア -->
-            <div class="flex items-center justify-center gap-6 mb-1.5 flex-shrink-0">
-              <button id="btn-undo" class="w-12 h-8 hover:scale-110 active:scale-90 transition-all flex items-center justify-center cursor-pointer">
-                <img src="images/btn_hand_left.png" alt="Undo" class="w-full h-full object-contain" />
-              </button>
-              <span class="text-[9px] font-mono font-bold text-zinc-400 tracking-wider">HISTORY</span>
-              <button id="btn-redo" class="w-12 h-8 hover:scale-110 active:scale-90 transition-all flex items-center justify-center cursor-pointer">
-                <img src="images/btn_hand_right.png" alt="Redo" class="w-full h-full object-contain" />
-              </button>
-            </div>
-
-            <!-- 5つの感情スライダー (数値を非表示・余白を削減) -->
-            <div class="w-full max-w-[280px] mx-auto space-y-1.5 px-4 flex-1 flex flex-col justify-center">
+            <!-- 感情スライダー（数値なし、余白最小） -->
+            <div class="flex-1 flex flex-col justify-center gap-2 w-full max-w-[300px] mx-auto px-2">
               ${['anger', 'sadness', 'unfairness', 'envy', 'void'].map(key => `
-                <div class="flex flex-col">
-                  <div class="flex justify-between items-center mb-0.5">
-                    <span class="text-xs font-bold text-black">${t[key]}</span>
-                  </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-[11px] font-bold text-black w-12 flex-shrink-0 text-right">${t[key]}</span>
                   <input
                     type="range"
                     id="slider-${key}"
                     min="0"
                     max="100"
                     value="${vibes[key]}"
-                    class="w-full slider-input"
+                    class="flex-1 slider-input"
                     data-vibe="${key}"
                   />
                 </div>
@@ -1309,8 +1257,8 @@
             </div>
 
             <!-- 決定ボタン -->
-            <div class="w-full flex justify-center pt-2 pb-4 flex-shrink-0">
-              <button id="btn-to-burn-step" class="w-16 h-16 hover:scale-110 active:scale-90 transition-all flex items-center justify-center cursor-pointer">
+            <div class="flex-shrink-0 flex justify-center mt-2">
+              <button id="btn-to-burn-step" class="w-14 h-14 hover:scale-110 active:scale-90 transition-all flex items-center justify-center cursor-pointer">
                 <img src="images/btn_thumb_ok.png" alt="決定" class="w-full h-full object-contain" />
               </button>
             </div>
@@ -1850,11 +1798,10 @@
           triggerRealFireBurnSimulation(() => {
             const instantReplies = generateContextualSympatheticEnjoReplies(val);
 
-            const account = generateUniqueAccount(vibes, val);
             const newPost = {
               id: `post-${Date.now()}-${Math.floor(Math.random()*1000)}`,
-              userName: account.userName,
-              userId: account.userId,
+              userName: 'あなたのお焚き上げ',
+              userId: '@my_otakiage',
               dateStr: 'たった今',
               text: val,
               authorVibe: { ...vibes },
