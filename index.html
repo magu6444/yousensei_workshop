@@ -115,7 +115,7 @@
       z-index: 9999;
       pointer-events: none;
       display: none;
-      transition: transform 0.4s cubic-bezier(0.77, 0, 0.175, 1);
+      transition: transform 0.75s cubic-bezier(0.77, 0, 0.175, 1);
     }
 
     .app-bottom-teeth-frame {
@@ -129,7 +129,7 @@
       z-index: 9999;
       pointer-events: none;
       display: none;
-      transition: transform 0.4s cubic-bezier(0.77, 0, 0.175, 1);
+      transition: transform 0.75s cubic-bezier(0.77, 0, 0.175, 1);
     }
 
     /* タイトル画面のみ牙フレームを表示 */
@@ -713,8 +713,8 @@
     };
 
     let rantText = '';
-    let categoryTags = ['#仕事', '#人間関係', '#恋愛', '#自分', '#理不尽', '#社会'];
-    let selectedTags = ['#仕事'];
+    let categoryTags = ['#いらいら', '#理不尽', '#虚無', '#嫉妬', '#悲しい'];
+    let selectedTags = ['#いらいら'];
 
     let posts = [
       {
@@ -876,30 +876,7 @@
         return { x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r };
       });
 
-      // 背景のレーダーチャートグリッドライン
-      if (showMetrics) {
-        ctx.strokeStyle = '#EBEBEF';
-        ctx.lineWidth = 1;
-        [0.25, 0.5, 0.75, 1.0].forEach(rScale => {
-          ctx.beginPath();
-          angles.forEach((a, idx) => {
-            const px = cx + Math.cos(a) * (radiusMax * rScale);
-            const py = cy + Math.sin(a) * (radiusMax * rScale);
-            if (idx === 0) ctx.moveTo(px, py);
-            else ctx.lineTo(px, py);
-          });
-          ctx.closePath();
-          ctx.stroke();
-        });
-
-        ctx.strokeStyle = '#F0F0F4';
-        angles.forEach(a => {
-          ctx.beginPath();
-          ctx.moveTo(cx, cy);
-          ctx.lineTo(cx + Math.cos(a) * radiusMax, cy + Math.sin(a) * radiusMax);
-          ctx.stroke();
-        });
-      }
+      // 本物の 3D WebGL 球体のみを綺麗にレンダリング（周囲の枠線・レーダー格子線・5項目テキストを完全除去してUIをスッキリ化）
 
       // --- Three.js 本格 3D 球体（Sphere Mesh）描画 ＆ 動的頂点ディスプレイスメント変形 ---
       const activePhoto = customPhotoImg || capturedPhotoImg || fallbackUserFaceImg;
@@ -943,8 +920,8 @@
           });
 
           const sphereMesh = new THREE.Mesh(geometry, material);
-          // 顔（目・鼻・口）が正真正面に向き、3D球体として自然に立体視できるようY軸90度（Math.PI / 2）回転補正
-          sphereMesh.rotation.y = Math.PI / 2;
+          // 3D球体テクスチャの回転角度をご指示通り -90度 (-Math.PI / 2) に設定
+          sphereMesh.rotation.y = -Math.PI / 2;
           scene.add(sphereMesh);
 
           // 球体の初期オリジナル頂点座標を保持
@@ -1035,21 +1012,7 @@
         );
       }
 
-      if (showMetrics) {
-        ctx.fillStyle = '#111111';
-        ctx.font = '700 24px "LINE Seed Sans", "LINE Seed JP", sans-serif';
-        const labelPos = [
-          { text: 'いらいら', x: cx, y: cy - radiusMax - 14, align: 'center' },
-          { text: '理不尽', x: cx + radiusMax + 12, y: cy + 4, align: 'left' },
-          { text: '虚無', x: cx + radiusMax * 0.55, y: cy + radiusMax + 30, align: 'left' },
-          { text: '嫉妬', x: cx - radiusMax * 0.55, y: cy + radiusMax + 30, align: 'right' },
-          { text: '悲しい', x: cx - radiusMax - 12, y: cy + 4, align: 'right' },
-        ];
-        labelPos.forEach(l => {
-          ctx.textAlign = l.align;
-          ctx.fillText(l.text, l.x, l.y);
-        });
-      }
+      // 3D球体のみをスッキリ表示（5項目テキストラベル非表示）
     }
 
     function drawTexturedTriangle(ctx, img, s, d) {
@@ -1678,25 +1641,25 @@
           const bottomTeeth = document.querySelector('.app-bottom-teeth-frame');
 
           if (topTeeth && bottomTeeth) {
-            // 1. 上下の歯がガツンと力強く噛み合う！
+            // 1. 上下の歯がガツンと力強く噛み合う！（時間をかけて重厚に）
             topTeeth.classList.add('bite-snap');
             bottomTeeth.classList.add('bite-snap');
 
             setTimeout(() => {
-              // 2. 口がガバッと大きく開いて上下の画面外へ一気に移動（退場）！
+              // 2. 口がガバッと大きく開いて上下の画面外へ時間をかけてゆったり移動（退場）！
               topTeeth.classList.remove('bite-snap');
               bottomTeeth.classList.remove('bite-snap');
               topTeeth.classList.add('open-wide');
               bottomTeeth.classList.add('open-wide');
 
               setTimeout(() => {
-                // 3. 画面外に完全に消え去ったタイミングで次の画面（感情設定）へ直行（カメラ許可はまだ求めない）
+                // 3. 画面外に完全に消え去ったタイミングで次の画面へ
                 topTeeth.classList.remove('open-wide');
                 bottomTeeth.classList.remove('open-wide');
                 currentStep = 'vibe_check';
                 renderApp();
-              }, 400);
-            }, 450);
+              }, 750);
+            }, 700);
           } else {
             currentStep = 'vibe_check';
             renderApp();
