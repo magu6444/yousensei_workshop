@@ -1656,7 +1656,8 @@
         card.onclick = (e) => {
           if (e.target.closest('.btn-gassho')) return;
           const postId = card.dataset.postid;
-          const post) {
+          const post = posts.find(p => p.id === postId);
+          if (post) {
             selectedPostModal = post;
             soundEngine.playSubtleClick();
             renderApp();
