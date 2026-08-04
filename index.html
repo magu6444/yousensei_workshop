@@ -38,6 +38,7 @@
       box-sizing: border-box;
       -webkit-tap-highlight-color: transparent;
       box-shadow: none !important;
+      font-family: 'Noto Sans', 'Noto Sans JP', sans-serif !important;
     }
 
     html, body {
@@ -45,7 +46,7 @@
       height: 100dvh;
       background-color: #FFFFFF;
       color: #0F1419;
-      font-family: 'Noto Sans', 'Noto Sans JP', sans-serif;
+      font-family: 'Noto Sans', 'Noto Sans JP', sans-serif !important;
       overflow-x: hidden;
       user-select: none;
       -webkit-font-smoothing: antialiased;
@@ -92,7 +93,7 @@
       font-weight: 900 !important;
       font-size: 11vw;
       color: #111111;
-      font-family: 'Noto Sans', 'Noto Sans JP', sans-serif;
+      font-family: 'Noto Sans', 'Noto Sans JP', sans-serif !important;
       line-height: 1;
       text-align: center;
     }
@@ -195,7 +196,6 @@
       border-radius: 14px;
       padding: 16px 18px;
       box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.06), 0 4px 8px -4px rgba(0, 0, 0, 0.03);
-      /* 物理的なスプリング弾力を生み出すバウンドイージング */
       transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.45s ease, box-shadow 0.4s ease;
       cursor: pointer;
       user-select: none;
@@ -608,7 +608,7 @@
 
     let currentStep = 'intro';
     let selectedPostModal = null;
-    let expandedCardId = null; // スタック表示時の1段階目フォーカス中のカードID
+    let expandedCardId = null;
     let timelineViewMode = 'stack';
 
     let vibes = {
@@ -1115,7 +1115,7 @@
       `;
     }
 
-    // --- STEP 3: タイムライン（ゆとりある重なりスタック） ---
+    // --- STEP 3: タイムライン ---
     function renderStep3ChaosGallery() {
       const t = i18n[currentLang];
 
@@ -1133,7 +1133,6 @@
 
             <div class="stack-container">
               ${posts.slice(0, 5).map((post, idx) => {
-                // 重なりすぎず、どの投稿の文字・雰囲気も適度に見えるゆとりのある間隔設定
                 const offsets = [
                   { top: 10, rot: -2, z: 50 },
                   { top: 85, rot: 2.5, z: 40 },
@@ -1151,8 +1150,8 @@
                     class="newspaper-stack-card stack-post-card"
                     style="top: ${off.top}px; transform: rotate(${off.rot}deg); z-index: ${off.z};"
                   >
-                    <div class="flex justify-between items-center pb-2 border-b border-zinc-200 mb-2.5 text-[10px] font-serif font-bold text-zinc-500">
-                      <span class="uppercase tracking-wider">DAILY OTAKIAGE SHIMBUN</span>
+                    <div class="flex justify-between items-center pb-2 border-b border-zinc-200 mb-2.5 text-[10px] font-bold text-zinc-500">
+                      <span class="uppercase tracking-wider font-bold">DAILY OTAKIAGE PAPER</span>
                       <span class="font-mono text-zinc-400">${post.dateStr}</span>
                     </div>
 
@@ -1167,7 +1166,7 @@
                           <span class="text-zinc-400 font-mono text-[10px] truncate">${post.userId}</span>
                         </div>
 
-                        <p class="text-xs text-black font-serif leading-relaxed font-bold line-clamp-3 mb-2">
+                        <p class="text-xs text-black leading-relaxed font-bold line-clamp-3 mb-2">
                           ${post.text}
                         </p>
 
@@ -1275,7 +1274,6 @@
                 </div>
               </div>
 
-              <!-- 動的レス一覧（即時反映対応） -->
               <div id="modal-replies-list" class="flex-1 overflow-y-auto p-4 space-y-2.5 bg-white">
                 ${p.replies && p.replies.map(r => `
                   <div class="bg-paper border border-paper-border p-3 rounded-2xl text-xs hover:border-zinc-300 transition-colors fade-in">
@@ -1394,7 +1392,7 @@
       expandedCardId = null;
     }
 
-    // --- イベントリスナー ＆ 2段階タップ・コメント送信即時反映修正 ---
+    // --- イベントリスナー ---
     function setupEventListeners() {
       const btnJp = document.getElementById('lang-btn-jp');
       if (btnJp) {
@@ -1514,14 +1512,12 @@
         };
       }
 
-      // --- 【修正】2段階タップフロー（1回目で画面中央フォーカス、2回目で詳細モーダル展開） ---
       document.querySelectorAll('.stack-post-card').forEach(card => {
         card.onclick = (e) => {
           soundEngine.playSubtleClick();
           const targetId = card.dataset.postid;
           const targetIdx = parseInt(card.dataset.idx, 10);
 
-          // 2回目のタップ：すでに中央フォーカス中なら投稿詳細モーダルを開く
           if (expandedCardId === targetId) {
             const post = posts.find(p => p.id === targetId);
             if (post) {
@@ -1531,7 +1527,6 @@
             return;
           }
 
-          // 1回目のタップ：元位置がどこであれ画面の真中央へ移動しフォーカス拡大。上下カードはスプリング散開
           expandedCardId = targetId;
 
           const allCards = document.querySelectorAll('.stack-post-card');
@@ -1551,7 +1546,6 @@
         };
       });
 
-      // モード切替
       const toggleViewBtn = document.getElementById('btn-toggle-viewmode');
       if (toggleViewBtn) {
         toggleViewBtn.onclick = () => {
@@ -1561,7 +1555,6 @@
         };
       }
 
-      // リスト表示カードクリック
       document.querySelectorAll('.post-item-card').forEach(card => {
         card.onclick = (e) => {
           if (e.target.closest('.btn-gassho')) return;
@@ -1620,7 +1613,6 @@
         };
       }
 
-      // --- 【バグ修正】コメント送信ボタンタップ時、即座に画面へ新レスを注入・自動スクロール即時反映 ---
       const submitReplyBtn = document.getElementById('btn-submit-reply');
       if (submitReplyBtn && selectedPostModal) {
         const handleReplySubmit = () => {
@@ -1639,7 +1631,6 @@
             input.value = '';
             soundEngine.playSubtleClick();
 
-            // レス一覧DOMへ即時追加＆先頭へスムーズスクロール
             const listContainer = document.getElementById('modal-replies-list');
             if (listContainer) {
               const replyDiv = document.createElement('div');
