@@ -199,12 +199,13 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    .slide-up-enter {
-      animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    /* メイン画面遷移用スライド（モーダル開閉で画面本体をスライドさせないよう分離） */
+    .screen-slide-enter {
+      animation: screenSlideEnter 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
-    @keyframes slideUp {
-      from { transform: translateY(100%); }
-      to { transform: translateY(0); }
+    @keyframes screenSlideEnter {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
@@ -253,7 +254,7 @@
       }
     };
 
-    // --- カメラ・自拍テクスチャ ＆ 顔面ドアップ・5角形モザイク切り抜きプロセス ---
+    // --- カメラ・自撮りテクスチャ ＆ 顔面ドアップ・5角形モザイク切り抜きプロセス ---
     let capturedPhotoImg = null;
 
     function createDefaultFaceTexture() {
@@ -593,7 +594,6 @@
       ashWeight: '1.4kg'
     };
 
-    // --- 【重要変更】アイコン枠を円形ではなく正5角形の切り抜き顔そのものとして直接描画 ---
     function drawPolaApexMeshDistortedFace(canvas, vibesData, showMetrics = true, customPhotoImg = null) {
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
@@ -627,7 +627,6 @@
         return { x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r };
       });
 
-      // 背景ガイド線（メトリクス表示時のみ）
       if (showMetrics) {
         ctx.strokeStyle = '#EBEBEF';
         ctx.lineWidth = 1;
@@ -652,7 +651,6 @@
         });
       }
 
-      // 最前面：正5角形に完全にクロップされた変形顔写真そのものを描画
       const activePhoto = customPhotoImg || capturedPhotoImg || fallbackUserFaceImg;
       if (activePhoto && activePhoto.complete) {
         const srcW = activePhoto.width || 300;
@@ -759,22 +757,18 @@
 
         ${selectedPostModal ? renderPostDetailModal() : ''}
 
-        <!-- 洗練されたボトムナビゲーションバー（SVGミニマルアイコン ＆ 中央のお焚き上げ追加＋ボタン） -->
         ${(isNavScreen && !selectedPostModal) ? `
           <nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto z-40 bg-white/95 backdrop-blur-md border-t border-paper-border py-2 px-6 flex justify-between items-center">
-            <!-- タイムライン (SVGリスト掲示板アイコン) -->
             <button id="nav-chaos" class="flex-1 py-1.5 flex justify-center items-center ${currentStep === 'chaos_gallery' ? 'text-black font-bold' : 'text-zinc-400'} hover:text-black transition-colors">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
               </svg>
             </button>
 
-            <!-- 中央のお焚き上げ投稿作成 ＋ ボタン -->
             <button id="nav-create-burn" class="w-11 h-11 bg-black text-white rounded-full flex items-center justify-center text-2xl font-bold shadow-md hover:bg-zinc-800 active:scale-95 transition-all mx-2 flex-shrink-0">
               ＋
             </button>
 
-            <!-- マイページ (SVG洗練ユーザーアイコン) -->
             <button id="nav-profile" class="flex-1 py-1.5 flex justify-center items-center ${currentStep === 'profile' ? 'text-black font-bold' : 'text-zinc-400'} hover:text-black transition-colors">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -997,7 +991,7 @@
       `;
     }
 
-    // --- STEP 3: タイムライン（正5角形切り抜き顔アイコン ＆ 炎SVG合掌マーク） ---
+    // --- STEP 3: タイムライン ---
     function renderStep3ChaosGallery() {
       const t = i18n[currentLang];
       return `
@@ -1005,7 +999,6 @@
           <div class="divide-y divide-paper-border">
             ${posts.map((post) => `
               <div data-postid="${post.id}" class="x-post-card post-item-card flex gap-3">
-                <!-- 円形枠を完全排除し、切抜5角形顔写真アイコンそのものを配置 -->
                 <div class="flex-shrink-0">
                   <div class="w-11 h-11 bg-white flex items-center justify-center">
                     <canvas id="card-canvas-${post.id}" class="block"></canvas>
@@ -1037,7 +1030,6 @@
                       <span class="text-[11px] font-mono">${post.replies ? post.replies.length : 0}</span>
                     </div>
 
-                    <!-- 雰囲気満点のミニマル炎SVG合掌/浄化アクションマーク -->
                     <button data-postid="${post.id}" class="btn-gassho flex items-center gap-1.5 hover:text-amber-600 transition-colors">
                       <svg class="w-4 h-4 text-black hover:text-amber-600 transition-colors" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M12 23c-4.97 0-9-3.58-9-8 0-3.9 2.5-6.8 5.5-9.5C9.5 4.5 11 3 12 1c1 2 2.5 3.5 3.5 4.5 3 2.7 5.5 5.6 5.5 9.5 0 4.42-4.03 8-9 8zm0-18c-1.5 2-3 3.5-4.5 5-2.2 2.2-3.5 4.2-3.5 7 0 3.3 2.7 6 6 6s6-2.7 6-6c0-2.8-1.3-4.8-3.5-7-1.5-1.5-3-3-4.5-5z"/>
@@ -1158,7 +1150,7 @@
       `;
     }
 
-    // --- 【メラメラ燃え上がるダイナミック炎お焚き上げトランジション演出】 ---
+    // --- メラメラ燃え上がる炎お焚き上げアニメーション ---
     function triggerFlameBurnTransition(onComplete) {
       const card = document.getElementById('solo-burn-card');
       if (!card) {
@@ -1167,8 +1159,6 @@
       }
 
       soundEngine.playSoftBurn();
-
-      // カードを炎エフェクトで燃え上がらせて消滅させる
       card.classList.add('flame-burn-animation');
 
       setTimeout(() => {
@@ -1176,8 +1166,8 @@
 
         const root = document.getElementById('app-root');
         if (root) {
-          root.classList.add('slide-up-enter');
-          setTimeout(() => root.classList.remove('slide-up-enter'), 800);
+          root.classList.add('screen-slide-enter');
+          setTimeout(() => root.classList.remove('screen-slide-enter'), 600);
         }
       }, 1000);
     }
@@ -1302,7 +1292,6 @@
         };
       }
 
-      // 炎のお焚き上げ実行ボタンアクション
       const executeBurnBtn = document.getElementById('btn-execute-burn');
       if (executeBurnBtn) {
         executeBurnBtn.onclick = () => {
@@ -1348,7 +1337,6 @@
         };
       });
 
-      // モーダル閉じる
       const modalSheet = document.getElementById('modal-sheet');
       const modalBackdrop = document.getElementById('modal-backdrop');
       const dragHandle = document.getElementById('modal-drag-handle');
@@ -1412,7 +1400,6 @@
         };
       }
 
-      // ボトムナビボタン
       const navChaos = document.getElementById('nav-chaos');
       if (navChaos) {
         navChaos.onclick = () => { currentStep = 'chaos_gallery'; soundEngine.playSubtleClick(); renderApp(); };
