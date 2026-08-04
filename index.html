@@ -242,7 +242,7 @@
       }
     };
 
-    // --- 拡張ユーザーアカウント名データベース (豊富なバリエーション) ---
+    // --- 拡張ユーザーアカウント名データベース ---
     const viralUserNames = [
       { name: '名無しさん@お腹いっぱい', handle: '@nanashi_2ch' },
       { name: '裏アカウント@拡散希望', handle: '@ura_kakukan' },
@@ -268,7 +268,6 @@
     function generateContextualSympatheticEnjoReplies(userText) {
       const lower = userText.toLowerCase();
       
-      // キーワード判定
       const isWork = lower.includes('上司') || lower.includes('仕事') || lower.includes('会社') || lower.includes('残業') || lower.includes('営業') || lower.includes('コード') || lower.includes('チャット');
       const isRelationship = lower.includes('友達') || lower.includes('彼女') || lower.includes('彼氏') || lower.includes('元カノ') || lower.includes('LINE') || lower.includes('マウント') || lower.includes('SNS');
       const isUnfair = lower.includes('理不尽') || lower.includes('指示') || lower.includes('丸投げ') || lower.includes('態度') || lower.includes('電車') || lower.includes('人間');
@@ -314,7 +313,6 @@
         ];
       }
 
-      // ランダムに5〜7件のアカウントとコメントを生成
       let result = [];
       const count = Math.floor(Math.random() * 3) + 5;
       const shuffledUsers = [...viralUserNames].sort(() => 0.5 - Math.random());
@@ -348,7 +346,7 @@
     let categoryTags = ['#仕事', '#人間関係', '#恋愛', '#自分', '#理不尽', '#社会'];
     let selectedTags = ['#仕事'];
 
-    // 初期投稿（多種多様なバリエーション投稿）
+    // 初期投稿
     let posts = [
       {
         id: 'post-1',
@@ -418,7 +416,6 @@
       }
     ];
 
-    // 無限スクロール用サンプル
     let postIndexCount = 7;
     const pastRantSamples = [
       '「前の担当者はやってくれたんだけどな〜」とか言ってくるクライアント、じゃあその前担当に頼めや。',
@@ -641,11 +638,11 @@
           ${currentStep === 'profile' ? renderProfileView() : ''}
         </main>
 
-        <!-- ポスト詳細モーダル (共感型合同批判コメント) -->
+        <!-- ポスト詳細モーダル (モーダル表示時はボトムタブ非表示＆シンプルなレスポンシブ入力枠) -->
         ${selectedPostModal ? renderPostDetailModal() : ''}
 
-        <!-- スマホ用ボトムタブ（文字なし！掲示板マーク📋 ＆ 人型マーク👤） -->
-        ${(currentStep === 'chaos_gallery' || currentStep === 'profile') ? `
+        <!-- スマホ用ボトムタブ（モーダル表示時は非表示にしてスッキリ化） -->
+        ${((currentStep === 'chaos_gallery' || currentStep === 'profile') && !selectedPostModal) ? `
           <nav class="border-t border-paper-border bg-white sticky bottom-0 z-50 flex justify-around py-3">
             <button id="nav-chaos" class="flex-1 py-1 text-center font-bold flex flex-col items-center justify-center ${currentStep === 'chaos_gallery' ? 'text-black' : 'text-zinc-400'}">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -682,7 +679,7 @@
 
         // タイムライン無限スクロール
         window.onscroll = () => {
-          if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 250) {
+          if (!selectedPostModal && (window.innerHeight + window.scrollY) >= document.body.offsetHeight - 250) {
             generateMorePosts();
             renderApp();
           }
@@ -699,8 +696,8 @@
       if (selectedPostModal) {
         const modalCanvas = document.getElementById(`modal-canvas-${selectedPostModal.id}`);
         if (modalCanvas) {
-          modalCanvas.width = 44;
-          modalCanvas.height = 44;
+          modalCanvas.width = 40;
+          modalCanvas.height = 40;
           drawMinimalDistortedFace(modalCanvas, selectedPostModal.authorVibe, false);
         }
       }
@@ -881,14 +878,14 @@
       `;
     }
 
-    // --- STEP 3: みんなのお焚き上げ (💬マーク＋数値のみの返信枠) ---
+    // --- STEP 3: みんなのお焚き上げ (💬マーク＋数値のみ) ---
     function renderStep3ChaosGallery() {
       const t = i18n[currentLang];
       return `
         <div class="flex-1 flex flex-col fade-in bg-white min-h-screen">
           <div class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-paper-border px-4 py-3 flex items-center justify-between">
             <h3 class="text-base font-black text-black">${t.chaosTitle}</h3>
-            <span class="text-[10px] font-mono text-zinc-400 uppercase">🔥 ENJO TIMELINE</span>
+            <span class="text-[10px] font-mono text-zinc-400 uppercase">LIVE</span>
           </div>
 
           <div class="divide-y divide-paper-border">
@@ -917,7 +914,6 @@
                     ${post.tag}
                   </div>
 
-                  <!-- 💬（リプライ吹き出しマーク）＋数値のみの通常スタイルの返信枠 -->
                   <div class="flex items-center justify-between text-zinc-500 text-xs max-w-xs pt-1">
                     <div class="flex items-center gap-1.5 hover:text-black transition-colors">
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -939,23 +935,22 @@
       `;
     }
 
-    // --- ポストタップ時の共感＆合同批判コメント表示モーダル ---
+    // --- ポストタップ時の簡潔で洗練されたレスモーダル（ボトムナビ非表示＆無駄なタイトル全削ぎ落とし） ---
     function renderPostDetailModal() {
       const p = selectedPostModal;
       return `
-        <div class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex justify-center items-end sm:items-center fade-in">
-          <div class="bg-white w-full max-w-md max-h-[90vh] rounded-t-2xl sm:rounded-2xl p-5 overflow-y-auto flex flex-col justify-between shadow-2xl">
-            <div>
-              <div class="flex justify-between items-center pb-3 border-b border-paper-border mb-4">
-                <div class="flex items-center gap-2">
-                  <span class="text-xs font-black text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">🔥 合同批判・炎上レス</span>
-                  <span class="text-[10px] text-zinc-400 font-mono">${p.replies ? p.replies.length : 0} 件</span>
-                </div>
-                <button id="btn-close-modal" class="text-zinc-500 font-bold text-lg px-2 hover:text-black">✕</button>
-              </div>
+        <div class="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex justify-center items-end sm:items-center fade-in">
+          <div class="bg-white w-full max-w-md h-[90vh] rounded-t-2xl sm:rounded-2xl p-4 overflow-hidden flex flex-col justify-between shadow-2xl">
+            <!-- ヘッダー（バツボタンのみで極限までスッキリ） -->
+            <div class="flex justify-between items-center pb-2 border-b border-paper-border mb-2 flex-shrink-0">
+              <span class="text-xs font-mono text-zinc-400">REPLIES (${p.replies ? p.replies.length : 0})</span>
+              <button id="btn-close-modal" class="text-zinc-500 font-bold text-lg px-2 hover:text-black">✕</button>
+            </div>
 
-              <!-- 投稿元テキスト -->
-              <div class="flex gap-3 mb-5 p-3 bg-zinc-50 rounded-xl border border-zinc-200">
+            <!-- スクロール可能コンテンツ（投稿本文＋レスポンス一覧） -->
+            <div class="flex-1 overflow-y-auto pr-1 space-y-3">
+              <!-- 親ポスト本文 -->
+              <div class="flex gap-3 p-3 bg-zinc-50 rounded-xl border border-zinc-200">
                 <div class="w-10 h-10 rounded-full border border-paper-border overflow-hidden bg-white p-0.5 flex-shrink-0">
                   <canvas id="modal-canvas-${p.id}" class="block"></canvas>
                 </div>
@@ -969,34 +964,30 @@
                 </div>
               </div>
 
-              <!-- 投稿内容にしっかり共感・合同批判するリアルコメント -->
-              <div class="border-t border-paper-border pt-3">
-                <h4 class="text-xs font-black text-black mb-3">🔥 投稿内容への共感＆合同批判レスポンス</h4>
-                
-                <div class="space-y-2.5">
-                  ${p.replies && p.replies.map(r => `
-                    <div class="bg-white border border-zinc-100 p-3 rounded-xl text-xs shadow-xs">
-                      <div class="flex items-center justify-between mb-1">
-                        <span class="font-bold text-zinc-700 text-[11px]">${r.name}</span>
-                        <span class="text-[9px] text-zinc-400 font-mono">${r.handle}</span>
-                      </div>
-                      <p class="text-black font-bold text-[11px] leading-relaxed">${r.text}</p>
+              <!-- レス・コメント一覧（無駄な「🔥合同批判〜」などの大見出しテキストを完全全消去） -->
+              <div class="space-y-2 pt-1">
+                ${p.replies && p.replies.map(r => `
+                  <div class="bg-white border border-zinc-100 p-3 rounded-xl text-xs">
+                    <div class="flex items-center justify-between mb-1">
+                      <span class="font-bold text-zinc-800 text-[11px]">${r.name}</span>
+                      <span class="text-[9px] text-zinc-400 font-mono">${r.handle}</span>
                     </div>
-                  `).join('')}
-                </div>
+                    <p class="text-zinc-900 font-medium text-[11px] leading-relaxed">${r.text}</p>
+                  </div>
+                `).join('')}
               </div>
             </div>
 
-            <!-- 追撃コメント入力欄 -->
-            <div class="pt-4 border-t border-paper-border mt-4 flex items-center gap-2">
+            <!-- 画面下部：自分もレスポンス（コメント）できる入力枠 -->
+            <div class="pt-3 border-t border-paper-border flex-shrink-0 flex items-center gap-2 bg-white">
               <input
                 type="text"
                 id="modal-reply-input"
-                placeholder="追撃コメントを投下..."
-                class="flex-1 px-3 py-2 text-xs border border-paper-border rounded-full focus:outline-none focus:border-black font-medium"
+                placeholder="返信を投稿..."
+                class="flex-1 px-4 py-2.5 text-xs bg-paper border border-paper-border rounded-full focus:outline-none focus:border-black font-medium"
               />
-              <button id="btn-submit-reply" class="px-4 py-2 bg-black text-white text-xs font-bold rounded-full hover:bg-zinc-800">
-                投下
+              <button id="btn-submit-reply" class="px-4 py-2.5 bg-black text-white text-xs font-bold rounded-full hover:bg-zinc-800 flex-shrink-0">
+                送信
               </button>
             </div>
           </div>
@@ -1271,7 +1262,7 @@
         };
       }
 
-      // STEP 2 -> STEP 3 (ユーザーの投稿内容にダイレクトに連動した共感＆合同批判コメントが生成される)
+      // STEP 2 -> STEP 3
       const executeBurnBtn = document.getElementById('btn-execute-burn');
       if (executeBurnBtn) {
         executeBurnBtn.onclick = () => {
@@ -1280,7 +1271,6 @@
           if (!val) return;
 
           triggerRealisticFireTransition(() => {
-            // 投稿本文に文脈連動して「共感＋ターゲットへの合同批判」レスポンスを即座に自動生成
             const instantReplies = generateContextualSympatheticEnjoReplies(val);
 
             posts.unshift({
@@ -1304,7 +1294,7 @@
         };
       }
 
-      // ポストタップで共感・合同批判モーダルを開く
+      // ポストタップで詳細モーダルを開く
       document.querySelectorAll('.post-item-card').forEach(card => {
         card.onclick = (e) => {
           if (e.target.closest('.btn-gassho')) return;
@@ -1327,7 +1317,7 @@
         };
       }
 
-      // モーダル内で追撃コメント追加
+      // モーダル内で自分も返信・追撃コメント追加
       const submitReplyBtn = document.getElementById('btn-submit-reply');
       if (submitReplyBtn && selectedPostModal) {
         submitReplyBtn.onclick = () => {
@@ -1335,8 +1325,8 @@
           if (input && input.value.trim()) {
             if (!selectedPostModal.replies) selectedPostModal.replies = [];
             selectedPostModal.replies.push({
-              name: '名無しさん@追撃',
-              handle: '@enjo_chaser',
+              name: 'あなた',
+              handle: '@you',
               text: input.value.trim()
             });
             input.value = '';
