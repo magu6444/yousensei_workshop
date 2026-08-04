@@ -1041,7 +1041,7 @@
       const isNavScreen = (currentStep === 'vibe_check' || currentStep === 'chaos_gallery' || currentStep === 'profile' || currentStep === 'solo_burn');
 
       root.innerHTML = `
-        <main class="flex-1 p-0 flex flex-col justify-start bg-white ${isNavScreen ? 'pb-20' : ''}">
+        <main class="flex-1 p-0 flex flex-col justify-start bg-white ${isNavScreen ? 'pb-24' : ''}">
           ${currentStep === 'vibe_check' ? renderStep1VibeCheck() : ''}
           ${currentStep === 'solo_burn' ? renderStep2SoloBurn() : ''}
           ${currentStep === 'chaos_gallery' ? renderStep3ChaosGallery() : ''}
@@ -1051,29 +1051,22 @@
         ${selectedPostModal ? renderPostDetailModal() : ''}
 
         ${(isNavScreen && !selectedPostModal) ? `
-          <nav class="flat-bottom-nav ${currentStep === 'vibe_check' ? 'inverted-theme' : ''}">
+          <nav class="flat-bottom-nav !bg-[#111111] !border-[#222222] py-2">
             <button id="nav-chaos" class="flex-1 py-1 flex justify-center items-center transition-all">
-              <div class="${currentStep === 'chaos_gallery' ? 'w-10 h-10 bg-black text-white rounded-full flex items-center justify-center shadow-xs' : (currentStep === 'vibe_check' ? 'w-10 h-10 text-zinc-500 hover:text-white flex items-center justify-center' : 'w-10 h-10 text-zinc-400 hover:text-black flex items-center justify-center')} transition-all">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <rect x="5" y="4" width="14" height="17" rx="2" stroke="currentColor" stroke-width="2" fill="none" />
-                  <path d="M9 4V2h6v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                  <line x1="9" y1="9" x2="15" y2="9" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                  <line x1="9" y1="13" x2="15" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                </svg>
+              <div class="${currentStep === 'chaos_gallery' ? 'w-14 h-14 bg-white rounded-full' : 'w-12 h-12 text-zinc-400'} flex items-center justify-center transition-all">
+                <img src="images/nav_chaos.png" alt="掲示板" class="w-10 h-10 object-contain" />
               </div>
             </button>
 
             <button id="nav-create-burn" class="flex-1 py-1 flex justify-center items-center transition-all">
-              <div class="${(currentStep === 'solo_burn' || currentStep === 'vibe_check') ? (currentStep === 'vibe_check' ? 'w-10 h-10 bg-white text-black rounded-full flex items-center justify-center shadow-xs' : 'w-10 h-10 bg-black text-white rounded-full flex items-center justify-center shadow-xs') : 'w-10 h-10 text-zinc-400 hover:text-black flex items-center justify-center'} transition-all">
-                <span class="text-lg leading-none">🔥</span>
+              <div class="${currentStep === 'solo_burn' ? 'w-14 h-14 bg-white rounded-full' : 'w-12 h-12 text-zinc-400'} flex items-center justify-center transition-all">
+                <img src="images/nav_burn.png" alt="お焚き上げ" class="w-10 h-10 object-contain" />
               </div>
             </button>
 
             <button id="nav-profile" class="flex-1 py-1 flex justify-center items-center transition-all">
-              <div class="${currentStep === 'profile' ? 'w-10 h-10 bg-black text-white rounded-full flex items-center justify-center shadow-xs' : (currentStep === 'vibe_check' ? 'w-10 h-10 text-zinc-500 hover:text-white flex items-center justify-center' : 'w-10 h-10 text-zinc-400 hover:text-black flex items-center justify-center')} transition-all">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
+              <div class="${currentStep === 'profile' ? 'w-14 h-14 bg-white rounded-full' : 'w-12 h-12 text-zinc-400'} flex items-center justify-center transition-all">
+                <img src="images/nav_profile.png" alt="マイページ" class="w-10 h-10 object-contain" />
               </div>
             </button>
           </nav>
@@ -1112,53 +1105,39 @@
         if (profileCanvas) {
           profileCanvas.width = 320;
           profileCanvas.height = 320;
+          // マイページでは設定した歪んだ顔をふわふわ浮遊表示（回転は無し）
           drawPolaApexMeshDistortedFace(profileCanvas, vibes, false, capturedPhotoImg || fallbackUserFaceImg);
         }
 
-        // --- SVGサークルテキストの楕円パスを設定し、JSでアニメーション ---
+        // --- SVGサークルテキスト（卵形は固定、文字のみがまわる）のJS制御 ---
         const svg = document.getElementById('profile-orbit-svg');
-        if (svg) {
+        const textPath = document.getElementById('orbit-text-path');
+        if (svg && textPath) {
           const svgW = svg.clientWidth || 350;
           const svgH = svg.clientHeight || 350;
           const cx = svgW / 2;
           const cy = svgH / 2;
 
-          // 外側の楕円パス（orbit-outer）
-          const rx1 = svgW * 0.46;
-          const ry1 = svgH * 0.47;
+          // 縦長卵型の楕円軌道 (rx=105, ry=155) - 少し上にシフト (cy - 35)
+          const rx = svgW * 0.32;
+          const ry = svgH * 0.44;
+          const shiftY = cy - 35;
           const outerPath = document.getElementById('orbit-outer');
           if (outerPath) {
             outerPath.setAttribute('d',
-              `M ${cx - rx1},${cy} a ${rx1},${ry1} 0 1,1 ${rx1*2},0 a ${rx1},${ry1} 0 1,1 -${rx1*2},0`
+              `M ${cx - rx},${shiftY} a ${rx},${ry} 0 1,1 ${rx*2},0 a ${rx},${ry} 0 1,1 -${rx*2},0`
             );
           }
 
-          // 内側の楕円パス（orbit-inner）
-          const rx2 = svgW * 0.35;
-          const ry2 = svgH * 0.36;
-          const innerPath = document.getElementById('orbit-inner');
-          if (innerPath) {
-            innerPath.setAttribute('d',
-              `M ${cx - rx2},${cy} a ${rx2},${ry2} 0 1,0 ${rx2*2},0 a ${rx2},${ry2} 0 1,0 -${rx2*2},0`
-            );
-          }
-
-          // SVG全体を時計回りに回転させるアニメーション
-          let outerAngle = 0;
-          let innerAngle = 0;
-          const outerTextEl = svg.querySelector('text:first-of-type');
-          const innerTextEl = svg.querySelector('text:last-of-type');
-
-          // SVG全体を包む2つのグループを動的に作成して個別に回転
-          const animateOrbits = () => {
+          // 文字がまわるアニメーション (startOffset をスライドさせる)
+          let textOffset = 0;
+          const animateTextFlow = () => {
             if (!document.getElementById('profile-orbit-svg')) return; // ページ遷移で停止
-            outerAngle = (outerAngle + 0.18) % 360;
-            innerAngle = (innerAngle - 0.13 + 360) % 360;
-            if (outerPath) outerPath.setAttribute('transform', `rotate(${outerAngle}, ${cx}, ${cy})`);
-            if (innerPath) innerPath.setAttribute('transform', `rotate(${innerAngle}, ${cx}, ${cy})`);
-            requestAnimationFrame(animateOrbits);
+            textOffset = (textOffset + 0.35) % 100;
+            textPath.setAttribute('startOffset', `${textOffset}%`);
+            requestAnimationFrame(animateTextFlow);
           };
-          requestAnimationFrame(animateOrbits);
+          requestAnimationFrame(animateTextFlow);
         }
       }
 
@@ -1442,47 +1421,43 @@
       `;
     }
 
-    // --- マイページ: 登録した今日の顔 + サークル文字アニメーション ---
+    // --- マイページ: 登録した今日の顔 + 卵型サークル文字アニメーション ---
     function renderProfileView() {
       const t = i18n[currentLang];
-      // サークルに流れる多言語テキスト（お焚き上げプラットフォームの意味）
-      const circleText = "お焚き上げプラットフォーム ✦ この装置は人々の鬱憤を炎上させ払うための機器であり大した意味はない ✦ Don't talk about it in the real world. ✦ 現実世界で話すな ✦ 不要在现实世界中谈论 ✦ 현실 세계에서 말하지 마라 ✦ Ne parlez pas dans le monde réel ✦ Не говори об этом в реальном мире ✦ No hables en el mundo real ✦ لا تتحدث في العالم الحقيقي ✦ ";
+      // サークルに流れる多言語テキスト（「現実世界では話せない」の多言語版）
+      const circleText = "現実世界では話せない ✦ 不能在现实世界中谈论 ✦ Don't talk about it in the real world. ✦ 현실 세계에서 말하지 마라 ✦ Ne parlez pas dans le monde réel ✦ Не говори об этом в reaな世界で ✦ No hables en el mundo real ✦ ";
       
       return `
-        <div class="flex-1 flex flex-col items-center justify-center fade-in bg-white overflow-hidden" style="height: calc(100vh - 5rem); position: relative;">
+        <div class="flex-1 flex flex-col items-center justify-between fade-in bg-white overflow-hidden pb-12" style="height: calc(100vh - 5rem); position: relative; padding-top: 4vh;">
           
-          <!-- サークルテキスト + 中央顔 のコンテナ -->
-          <div class="relative flex items-center justify-center" style="width: min(88vw, 380px); height: min(88vw, 380px);">
+          <!-- サークルテキスト + 中央顔 のコンテナ（上にマージンを取って配置） -->
+          <div class="relative flex items-center justify-center mt-2" style="width: min(88vw, 380px); height: min(88vw, 380px);">
             
-            <!-- SVGサークルテキスト（二重楕円、回転アニメーション） -->
+            <!-- SVGサークルテキスト（卵形楕円、文字のみ回転） -->
             <svg id="profile-orbit-svg" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible;">
               <defs>
                 <path id="orbit-outer" d="" />
-                <path id="orbit-inner" d="" />
               </defs>
-              <!-- 外側のサークルテキスト（時計回り） -->
-              <text font-size="9" fill="#111" font-family="'LINE Seed JP', sans-serif" letter-spacing="1">
-                <textPath href="#orbit-outer" startOffset="0%">
+              <!-- 卵型の輪は一つ -->
+              <text font-size="9.5" fill="#111" font-family="'LINE Seed JP', sans-serif" letter-spacing="1.5">
+                <textPath id="orbit-text-path" href="#orbit-outer" startOffset="0%">
                   ${circleText}${circleText}
-                </textPath>
-              </text>
-              <!-- 内側のサークルテキスト（反時計回り） -->
-              <text font-size="8" fill="#555" font-family="'LINE Seed JP', sans-serif" letter-spacing="0.5">
-                <textPath href="#orbit-inner" startOffset="50%">
-                  ${circleText}
                 </textPath>
               </text>
             </svg>
 
-            <!-- 中央の顔（ふわふわ浮遊） -->
-            <div class="relative z-10 flex flex-col items-center justify-center">
+            <!-- 中央の顔（ふわふわ浮遊のみ、回転なし） -->
+            <div class="relative z-10 flex flex-col items-center justify-center" style="margin-top: -70px;">
               <canvas id="profile-face-canvas" style="width:160px;height:160px;display:block;border-radius:50%;overflow:hidden;"></canvas>
-              <!-- 顔登録ボタン（小） -->
-              <button id="btn-recreate-vibe" class="mt-4 px-5 py-2 bg-black text-white text-[11px] font-bold rounded-full hover:bg-zinc-700 active:scale-95 transition-all">
-                ${t.btnRecreateVibe}
-              </button>
             </div>
 
+          </div>
+
+          <!-- 再設定ボタン（卵形や顔と被らないよう、完全に下部に配置） -->
+          <div class="w-full flex justify-center mt-auto pb-4">
+            <button id="btn-recreate-vibe" class="px-10 py-3.5 bg-black text-white text-xs font-bold rounded-full hover:bg-zinc-700 active:scale-95 transition-all shadow-md">
+              ${t.btnRecreateVibe}
+            </button>
           </div>
         </div>
 
@@ -1864,18 +1839,23 @@
           triggerRealFireBurnSimulation(() => {
             const instantReplies = generateContextualSympatheticEnjoReplies(val);
 
-            posts.unshift({
-              id: `post-${Date.now()}`,
+            const newPost = {
+              id: `post-${Date.now()}-${Math.floor(Math.random()*1000)}`,
               userName: 'あなたのお焚き上げ',
               userId: '@my_otakiage',
               dateStr: 'たった今',
               text: val,
               authorVibe: { ...vibes },
-              customPhoto: capturedPhotoImg || fallbackUserFaceImg,
+              customPhotoData: (capturedPhotoImg && capturedPhotoImg.src) || (fallbackUserFaceImg && fallbackUserFaceImg.src) || '',
               gasshoCount: 1,
               tag: selectedTags.join(' '),
               replies: instantReplies
-            });
+            };
+
+            posts.unshift(newPost);
+            
+            // クラウド上の共有データベース (kvdb.io) へ書き込んで即時同期
+            syncPushToCloudDatabase(newPost);
 
             burnStats.totalBurned += 1;
             rantText = '';
@@ -1963,6 +1943,9 @@
             selectedPostModal.replies.unshift(newReplyObj);
             input.value = '';
             soundEngine.playSubtleClick();
+
+            // クラウド共有データベースへコメント追加後の投稿データを更新
+            syncPushToCloudDatabase(selectedPostModal);
 
             const listContainer = document.getElementById('modal-replies-list');
             if (listContainer) {
@@ -2072,8 +2055,113 @@
       lastTouchEnd = now;
     }, { passive: false });
 
-    window.onload = function() {
+    // 共有リアルタイムデータベース (KVDB.ioを用いたサーバーレス型匿名データ共有)
+    const KVDB_URL = 'https://kvdb.io/4y9W8p9H2M9Q2S9X2Z2A2B/otakiage_posts_v2';
+
+    async function syncPushToCloudDatabase(singlePostOrUpdatedPost) {
+      try {
+        const localList = [...posts];
+        const cleanList = localList.map(p => ({
+          id: p.id,
+          userName: p.userName,
+          userId: p.userId,
+          dateStr: p.dateStr,
+          text: p.text,
+          authorVibe: p.authorVibe,
+          customPhotoData: p.customPhotoData || '',
+          gasshoCount: p.gasshoCount || 0,
+          tag: p.tag,
+          replies: p.replies || []
+        }));
+
+        await fetch(KVDB_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(cleanList)
+        });
+      } catch (err) {
+        console.warn('Realtime database push error:', err);
+      }
+    }
+
+    async function fetchFromCloudDatabase() {
+      try {
+        const res = await fetch(KVDB_URL);
+        if (res.ok) {
+          const cloudPosts = await res.json();
+          if (Array.isArray(cloudPosts) && cloudPosts.length > 0) {
+            cloudPosts.forEach(cp => {
+              const exists = posts.some(p => p.id === cp.id);
+              if (!exists) {
+                posts.unshift(cp);
+              } else {
+                const target = posts.find(p => p.id === cp.id);
+                if (target && cp.replies && cp.replies.length > (target.replies || []).length) {
+                  target.replies = cp.replies;
+                }
+              }
+            });
+            posts = posts.filter((p, index, self) =>
+              index === self.findIndex((t) => t.id === p.id)
+            );
+            return true;
+          }
+        }
+      } catch (err) {
+        console.warn('Realtime database fetch error:', err);
+      }
+      return false;
+    }
+
+    window.onload = async function() {
       renderApp();
+
+      // 初回ロード時にクラウド上の共有データを読み込む
+      await fetchFromCloudDatabase();
+      renderApp();
+
+      // リアルタイムデータベースとのクラウド自動同期周期 (5秒ごと)
+      setInterval(async () => {
+        const updated = await fetchFromCloudDatabase();
+        if (updated && currentStep === 'chaos_gallery' && !selectedPostModal) {
+          renderApp();
+        }
+      }, 5000);
+
+      // 他のユーザーが打ち込んだお焚き上げもリアルタイムで更新されるようにするスケジューラー (8秒ごと)
+      setInterval(() => {
+        // バックグラウンドで新規投稿をタイムラインの最上部に生成して挿入
+        const sampleText = pastRantSamples[Math.floor(Math.random() * pastRantSamples.length)];
+        const tags = ['#仕事', '#人間関係', '#自分', '#社会', '#恋愛'];
+        const tag1 = tags[Math.floor(Math.random() * tags.length)];
+        const u = viralUserNames[Math.floor(Math.random() * viralUserNames.length)];
+        
+        const newPost = {
+          id: `post-gen-realtime-${Date.now()}`,
+          userName: u.name,
+          userId: `${u.handle}_${postIndexCount}`,
+          dateStr: 'たった今',
+          text: sampleText,
+          authorVibe: {
+            anger: Math.floor(Math.random() * 80 + 20),
+            sadness: Math.floor(Math.random() * 80 + 20),
+            unfairness: Math.floor(Math.random() * 80 + 20),
+            envy: Math.floor(Math.random() * 80 + 20),
+            void: Math.floor(Math.random() * 80 + 20)
+          },
+          gasshoCount: Math.floor(Math.random() * 5 + 1),
+          tag: tag1,
+          replies: generateContextualSympatheticEnjoReplies(sampleText)
+        };
+        
+        posts.unshift(newPost);
+        postIndexCount++;
+
+        // 掲示板画面を表示中の場合のみ、画面のタイムライン表示を即座に再レンダリングする
+        if (currentStep === 'chaos_gallery' && !selectedPostModal) {
+          renderApp();
+        }
+      }, 8000);
     };
   </script>
 </body>
