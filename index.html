@@ -104,7 +104,7 @@
     /* 全画面最前面レイヤー：上部（アセット 3）＆ 下部（アセット 4）牙フレーム */
     .app-top-teeth-frame {
       position: fixed;
-      top: 0;
+      top: -14px;
       left: 50%;
       transform: translateX(-50%);
       width: 100vw;
@@ -117,7 +117,7 @@
 
     .app-bottom-teeth-frame {
       position: fixed;
-      bottom: 0;
+      bottom: -14px;
       left: 50%;
       transform: translateX(-50%);
       width: 100vw;
@@ -134,21 +134,21 @@
       flex-direction: column;
       justify-content: space-between;
       height: 100dvh;
-      padding-top: max(6.5rem, calc(env(safe-area-inset-top) + 5.5rem));
-      padding-bottom: max(4.2rem, calc(env(safe-area-inset-bottom) + 3.2rem));
+      padding-top: max(5.0rem, calc(env(safe-area-inset-top) + 4.0rem));
+      padding-bottom: max(5.5rem, calc(env(safe-area-inset-bottom) + 4.5rem));
       padding-left: 1.25rem;
       padding-right: 1.25rem;
       overflow: hidden;
     }
 
-    /* ポスタータイトルの縦列ピタリ整列 ＆ ゆったり行間スペース */
+    /* ポスタータイトルの縦列ピタリ整列 ＆ 極限まで詰めた行間・字間 */
     .poster-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      row-gap: 0.2rem;
-      column-gap: 0.3rem;
+      row-gap: 0px;
+      column-gap: 0px;
       width: 100%;
-      max-width: 320px;
+      max-width: 280px;
       margin: 0 auto;
     }
 
@@ -1040,8 +1040,8 @@
 
           </div>
 
-          <div class="w-full flex justify-center pb-2">
-            <button id="btn-start-app" class="w-12 h-12 bg-black text-white font-bold text-xl rounded-full hover:bg-zinc-800 hover:scale-105 active:scale-95 transition-all flex items-center justify-center">
+          <div class="w-full flex justify-center pb-16">
+            <button id="btn-start-app" class="w-12 h-12 bg-black text-white font-bold text-xl rounded-full hover:bg-zinc-800 hover:scale-105 active:scale-95 transition-all flex items-center justify-center shadow-md">
               <span>→</span>
             </button>
           </div>
@@ -1070,7 +1070,7 @@
             </div>
           </div>
 
-          <div class="w-full flex justify-center pb-4">
+          <div class="w-full flex justify-center pb-16">
             <button id="btn-to-burn-step" class="w-14 h-14 bg-black text-white text-2xl font-bold rounded-full hover:bg-zinc-800 hover:scale-105 active:scale-95 transition-all flex items-center justify-center shadow-lg">
               <span>→</span>
             </button>
