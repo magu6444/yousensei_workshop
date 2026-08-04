@@ -592,7 +592,23 @@
       '店員さんに横柄な態度取る人とデートした。一瞬で冷めてその場で会計別々にして帰ってきた。',
       'グループLINEで私以外で遊びに行った写真流れてきた時の、心臓がシュッて冷たくなる感覚。',
       '「残業するのが偉い」風潮の残る職場、定時退社する私を見る目線が冷たすぎて草も生えない。',
-      '「最近の若い子は根性がない」って言ってる上司、根性論でしかマネジメントできない自分の無能さを露呈してるだけ。'
+      '「最近の若い子は根性がない」って言ってる上司、根性論でしかマネジメントできない自分の無能さを露呈してるだけ。',
+      'SNSの裏アカウントで職場の愚痴書いてたら同僚に特定されて気まずい空気が流れてる。',
+      '「奢ってやった」感を全面に出してくるのに、実際割り勘に近くて千円札1枚しか出さない男、頼むから消えて。',
+      '新人の質問に「前も教えたよね？」って冷たく返す先輩。1回で完璧に覚えられるわけないだろ。',
+      'レジ打ちで「早くしろ」と言わんばかりに小銭をトレイに叩きつけて置く客、育ちが悪すぎる。',
+      '「君のためを思って言ってるんだよ」という枕詞を使う奴の100%は、自分の全能感に酔いたいだけ。',
+      '体調不良で休む連絡入れたら「代わり探せる？」って聞いてくる店長。それが社員であるあなたの仕事だろ。',
+      'マウント取るためだけにインスタストーリーあげてる友達、投稿見るたびにエネルギー削られるからミュートした。',
+      '「男（女）ってこうだよね〜」って主語をクソデカくして偏見を語る奴、視野が狭すぎて会話にならない。',
+      '夫婦喧嘩の理由が「靴下を裏返しで洗濯機に入れた」なの、積み重なった不満の爆発でしかない。',
+      '「いつ結婚するの？」って親戚の集まりで聞いてくる親戚のおじさん、他人の人生に足踏み入れないで。',
+      '美容室で会話したくないオーラ出してるのに、延々とプライベートの質問攻めしてくるスタイリストさん辛い。',
+      '電車内でイヤホンから音漏れまくってる奴、その音楽で他人の耳が汚れてる自覚持ってくれ。',
+      '打ち合わせ1分前に「今日リスケで」って連絡してくるクライアント、人の時間を何だと思ってる？',
+      '「お金がない」が口癖の友達が、毎週高級カフェの写真を上げてて複雑な気持ちになる。',
+      'エレベーターでボタン押して開けて待ってあげたのに、会釈一つせず無言で降りていく奴。',
+      '自分が間違えてるのに絶対謝らず、「言い方が分かりづらかった」と人のせいにする上司。'
     ];
 
     function generateMorePosts() {
@@ -1134,44 +1150,74 @@
       `;
     }
 
-    // --- 感情パスポート ---
+    // --- 感情パスポート (Ray Johnson コンセプチュアル・モノクロアート風パスポート) ---
     function renderProfileView() {
       const t = i18n[currentLang];
       return `
-        <div class="flex-1 flex flex-col items-center py-6 px-4 fade-in">
-          <div class="bg-white border border-paper-border p-6 w-full rounded-2xl">
-            <div class="flex justify-between items-center border-b border-paper-border pb-3 mb-4">
-              <div>
-                <div class="text-[9px] text-zinc-400 font-mono tracking-widest">${t.passportTag}</div>
-                <div class="text-sm font-black text-black">USER_ID: #ANON-${Math.floor(vibes.anger * 77)}</div>
+        <div class="flex-1 flex flex-col items-center py-4 px-3 fade-in bg-white min-h-screen">
+          <div class="bg-white border-2 border-black p-5 w-full max-w-sm font-mono text-black">
+            
+            <!-- 上部タイトル ＆ ヘッダー -->
+            <div class="border-b-2 border-black pb-2 mb-4">
+              <div class="flex justify-between items-start text-[10px] tracking-widest font-black uppercase">
+                <span>EMOTION PASSPORT ARCHIVE</span>
+                <span>4X6 INCHES</span>
               </div>
-              <div class="text-right text-[9px] text-zinc-400 font-mono font-bold">
-                OTAKIAGE
-              </div>
-            </div>
-
-            <div class="flex flex-col items-center mb-4">
-              <div class="bg-white p-1">
-                <canvas id="profile-face-canvas" class="block"></canvas>
-              </div>
-
-              <div class="grid grid-cols-3 gap-1 w-full mt-4 text-center text-xs border border-paper-border p-3 bg-paper rounded-xl">
-                <div>
-                  <div class="text-zinc-500 text-[9px] font-bold">${t.burnedCountLabel}</div>
-                  <div class="text-black font-black text-xs mt-0.5">${burnStats.totalBurned}</div>
-                </div>
-                <div class="border-x border-paper-border">
-                  <div class="text-zinc-500 text-[9px] font-bold">${t.gasshoSentLabel}</div>
-                  <div class="text-black font-black text-xs mt-0.5">${burnStats.gasshoGiven}</div>
-                </div>
-                <div>
-                  <div class="text-zinc-500 text-[9px] font-bold">${t.purifiedAshLabel}</div>
-                  <div class="text-black font-black text-xs mt-0.5">${burnStats.ashWeight}</div>
-                </div>
+              <div class="text-[9px] text-zinc-600 mt-1 uppercase font-bold">
+                PLEASE ADD TO & RETURN TO OTAKIAGE SYSTEM
               </div>
             </div>
 
-            <button id="btn-recreate-vibe" class="w-full py-3.5 bg-black text-white text-xs font-bold rounded-full hover:bg-zinc-800 transition-colors">
+            <!-- メインダブルフェイス枠（コンセプチュアルアートスタイル） -->
+            <div class="border-2 border-black p-3 mb-4 bg-white relative">
+              <div class="text-center text-[9px] font-black tracking-widest border-b border-black pb-1 mb-3">
+                DUAL ASPECT FACE MESH (ID: #ANON-${Math.floor(vibes.anger * 77)})
+              </div>
+
+              <div class="flex justify-around items-center gap-2">
+                <div class="flex flex-col items-center">
+                  <div class="w-28 h-28 border border-black p-1 bg-white flex items-center justify-center shadow-xs">
+                    <canvas id="profile-face-canvas" class="block"></canvas>
+                  </div>
+                  <span class="text-[8px] font-black mt-1 uppercase tracking-tighter">1. DISTORTION MESH</span>
+                </div>
+
+                <div class="flex flex-col items-center">
+                  <div class="w-28 h-28 border border-black p-1 bg-zinc-50 flex items-center justify-center relative overflow-hidden">
+                    <!-- シルエット・ステンシルアート風表現 -->
+                    <div class="w-20 h-24 border-2 border-black rounded-t-full flex flex-col items-center justify-center bg-white opacity-90">
+                      <div class="w-12 h-0.5 bg-black my-1"></div>
+                      <div class="w-8 h-0.5 bg-black my-1"></div>
+                      <div class="text-[7px] font-black text-black mt-2">STENCIL</div>
+                    </div>
+                  </div>
+                  <span class="text-[8px] font-black mt-1 uppercase tracking-tighter">2. SILHOUETTE CUTOUT</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- ステータス指標（モノクロ枠囲み） -->
+            <div class="border-2 border-black p-3 mb-4 divide-y border-dashed divide-black text-xs font-black">
+              <div class="flex justify-between items-center py-1.5">
+                <span class="text-[10px] uppercase">${t.burnedCountLabel}</span>
+                <span class="font-mono text-sm">${burnStats.totalBurned}</span>
+              </div>
+              <div class="flex justify-between items-center py-1.5">
+                <span class="text-[10px] uppercase">${t.gasshoSentLabel}</span>
+                <span class="font-mono text-sm">${burnStats.gasshoGiven}</span>
+              </div>
+              <div class="flex justify-between items-center py-1.5">
+                <span class="text-[10px] uppercase">${t.purifiedAshLabel}</span>
+                <span class="font-mono text-sm">${burnStats.ashWeight}</span>
+              </div>
+            </div>
+
+            <div class="text-[8px] text-zinc-500 mb-4 text-center leading-tight uppercase font-bold">
+              PRINT IMAGE. ADD TO IT AND RETURN TO:<br>
+              OTAKIAGE ARCHIVE HQ / 2026 EDITION
+            </div>
+
+            <button id="btn-recreate-vibe" class="w-full py-3 bg-black text-white text-xs font-black uppercase tracking-wider hover:bg-zinc-800 transition-colors border border-black">
               ${t.btnRecreateVibe}
             </button>
           </div>
