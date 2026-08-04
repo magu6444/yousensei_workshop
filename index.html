@@ -761,13 +761,13 @@
 
       if (showMetrics) {
         ctx.fillStyle = '#111111';
-        ctx.font = '700 10px "Noto Sans JP", sans-serif';
+        ctx.font = '700 11px "LINE Seed Sans", "LINE Seed JP", sans-serif';
         const labelPos = [
-          { text: 'flowy', x: cx, y: cy - radiusMax - 10, align: 'center' },
-          { text: 'deep', x: cx + radiusMax + 14, y: cy - 6, align: 'left' },
-          { text: 'edgy', x: cx + radiusMax * 0.65, y: cy + radiusMax + 14, align: 'left' },
-          { text: 'playful', x: cx - radiusMax * 0.65, y: cy + radiusMax + 14, align: 'right' },
-          { text: 'moody', x: cx - radiusMax - 14, y: cy - 6, align: 'right' },
+          { text: 'いらいら', x: cx, y: cy - radiusMax - 10, align: 'center' },
+          { text: '理不尽', x: cx + radiusMax + 14, y: cy - 6, align: 'left' },
+          { text: '虚無', x: cx + radiusMax * 0.65, y: cy + radiusMax + 16, align: 'left' },
+          { text: '嫉妬', x: cx - radiusMax * 0.65, y: cy + radiusMax + 16, align: 'right' },
+          { text: '悲しい', x: cx - radiusMax - 14, y: cy - 6, align: 'right' },
         ];
         labelPos.forEach(l => {
           ctx.textAlign = l.align;
@@ -1188,77 +1188,72 @@
       `;
     }
 
-    // --- 感情パスポート (Ray Johnson コンセプチュアル・モノクロアート風パスポート) ---
+    // --- 感情パスPORT (Temnoart Visual Diary ミニマル・エディトリアルデザイン) ---
     function renderProfileView() {
       const t = i18n[currentLang];
+      const anonId = Math.floor(vibes.anger * 77);
+      
       return `
-        <div class="flex-1 flex flex-col items-center justify-center pt-8 pb-24 px-3 fade-in bg-white min-h-screen">
-          <div class="bg-white border-2 border-black p-5 w-full max-w-sm font-mono text-black">
-            
-            <!-- 上部タイトル ＆ ヘッダー -->
-            <div class="border-b-2 border-black pb-2 mb-4">
-              <div class="flex justify-between items-start text-[10px] tracking-widest font-black uppercase">
-                <span>EMOTION PASSPORT ARCHIVE</span>
-                <span>4X6 INCHES</span>
-              </div>
-              <div class="text-[9px] text-zinc-600 mt-1 uppercase font-bold">
-                PLEASE ADD TO & RETURN TO OTAKIAGE SYSTEM
-              </div>
-            </div>
-
-            <!-- メインダブルフェイス枠（コンセプチュアルアートスタイル） -->
-            <div class="border-2 border-black p-3 mb-4 bg-white relative">
-              <div class="text-center text-[9px] font-black tracking-widest border-b border-black pb-1 mb-3">
-                DUAL ASPECT FACE MESH (ID: #ANON-${Math.floor(vibes.anger * 77)})
-              </div>
-
-              <div class="flex justify-around items-center gap-2">
-                <div class="flex flex-col items-center">
-                  <div class="w-28 h-28 border border-black p-1 bg-white flex items-center justify-center shadow-xs">
-                    <canvas id="profile-face-canvas" class="block"></canvas>
-                  </div>
-                  <span class="text-[8px] font-black mt-1 uppercase tracking-tighter">1. DISTORTION MESH</span>
-                </div>
-
-                <div class="flex flex-col items-center">
-                  <div class="w-28 h-28 border border-black p-1 bg-zinc-50 flex items-center justify-center relative overflow-hidden">
-                    <!-- シルエット・ステンシルアート風表現 -->
-                    <div class="w-20 h-24 border-2 border-black rounded-t-full flex flex-col items-center justify-center bg-white opacity-90">
-                      <div class="w-12 h-0.5 bg-black my-1"></div>
-                      <div class="w-8 h-0.5 bg-black my-1"></div>
-                      <div class="text-[7px] font-black text-black mt-2">STENCIL</div>
-                    </div>
-                  </div>
-                  <span class="text-[8px] font-black mt-1 uppercase tracking-tighter">2. SILHOUETTE CUTOUT</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- ステータス指標（モノクロ枠囲み） -->
-            <div class="border-2 border-black p-3 mb-4 divide-y border-dashed divide-black text-xs font-black">
-              <div class="flex justify-between items-center py-1.5">
-                <span class="text-[10px] uppercase">${t.burnedCountLabel}</span>
-                <span class="font-mono text-sm">${burnStats.totalBurned}</span>
-              </div>
-              <div class="flex justify-between items-center py-1.5">
-                <span class="text-[10px] uppercase">${t.gasshoSentLabel}</span>
-                <span class="font-mono text-sm">${burnStats.gasshoGiven}</span>
-              </div>
-              <div class="flex justify-between items-center py-1.5">
-                <span class="text-[10px] uppercase">${t.purifiedAshLabel}</span>
-                <span class="font-mono text-sm">${burnStats.ashWeight}</span>
-              </div>
-            </div>
-
-            <div class="text-[8px] text-zinc-500 mb-4 text-center leading-tight uppercase font-bold">
-              PRINT IMAGE. ADD TO IT AND RETURN TO:<br>
-              OTAKIAGE ARCHIVE HQ / 2026 EDITION
-            </div>
-
-            <button id="btn-recreate-vibe" class="w-full py-3 bg-black text-white text-xs font-black uppercase tracking-wider hover:bg-zinc-800 transition-colors border border-black">
-              ${t.btnRecreateVibe}
-            </button>
+        <div class="flex-1 flex flex-col items-center justify-start pt-6 pb-24 px-4 fade-in bg-[#FAFAFA] min-h-screen text-black font-sans">
+          
+          <!-- 上部極小ヘッダー (temnoart & (1)) -->
+          <div class="w-full max-w-sm flex justify-between items-center text-[10px] text-zinc-500 font-mono mb-6 px-1">
+            <span class="tracking-widest">temnoart</span>
+            <span class="tracking-widest">(1)</span>
           </div>
+
+          <!-- 中央の黒枠ポートレートダイアグラム写真 -->
+          <div class="relative bg-white border border-black p-1 shadow-sm mb-8 max-w-[240px] w-full aspect-[3/4] flex items-center justify-center overflow-hidden">
+            <canvas id="profile-face-canvas" class="block w-full h-full object-contain"></canvas>
+
+            <!-- 画像上の注釈ナンバーオーバーレイ (ミニマルダイアグラム風) -->
+            <div class="absolute inset-0 pointer-events-none font-mono text-[9px] text-black font-bold">
+              <span class="absolute top-[12%] left-[18%]">1</span>
+              <span class="absolute top-[20%] left-[28%]">2</span>
+              <span class="absolute top-[8%] left-[48%]">3</span>
+              <span class="absolute top-[18%] left-[54%]">5</span>
+              <span class="absolute top-[18%] left-[62%]">6</span>
+              <span class="absolute top-[28%] left-[80%]">24</span>
+              <span class="absolute top-[40%] left-[12%]">10</span>
+              <span class="absolute top-[48%] left-[20%]">14</span>
+              <span class="absolute top-[52%] left-[48%] font-black underline">15</span>
+              <span class="absolute top-[52%] left-[56%]">16</span>
+              <span class="absolute top-[75%] right-[15%]">29</span>
+            </div>
+          </div>
+
+          <!-- 下部タイポグラフィ (name : dasha / age : 25 スタイル) -->
+          <div class="w-full max-w-sm flex flex-col items-center mb-8 font-mono">
+            <div class="flex items-center gap-2 text-lg font-normal tracking-wide">
+              <span>name</span>
+              <span class="font-bold">:</span>
+              <span class="font-bold text-xl">anon_${anonId}</span>
+            </div>
+            <div class="flex items-center gap-2 text-lg font-normal tracking-wide -mt-1">
+              <span>age</span>
+              <span class="font-bold">:</span>
+              <span class="font-bold text-xl">${burnStats.totalBurned + 20}</span>
+            </div>
+          </div>
+
+          <!-- エディトリアル・ポエムテキスト文章 -->
+          <div class="w-full max-w-sm text-center text-xs text-zinc-700 leading-relaxed font-sans space-y-3 mb-8 px-2 font-medium">
+            <p class="tracking-wide">
+              この記録は — 私の感情のヴィジュアル・ダイアリー。
+            </p>
+            <p class="tracking-wide text-zinc-600">
+              浄化指数 : <span class="font-bold text-black">${burnStats.totalBurned}</span> / 送った合掌 : <span class="font-bold text-black">${burnStats.gasshoGiven}</span> / 灰の重量 : <span class="font-bold text-black">${burnStats.ashWeight}</span>
+            </p>
+            <p class="text-[11px] text-zinc-500 leading-normal pt-1">
+              思考・歪み・感情のパラメータをひとつの顔のメッシュへと結実させ、手放すための探索空間 :)
+            </p>
+          </div>
+
+          <!-- 再設定ボタン -->
+          <button id="btn-recreate-vibe" class="w-full max-w-xs py-3 border border-black bg-black text-white text-xs font-bold rounded-full hover:bg-zinc-800 transition-colors shadow-xs">
+            ${t.btnRecreateVibe}
+          </button>
+
         </div>
       `;
     }
