@@ -208,20 +208,16 @@
         posterLine2: ['お', '💢', '焚', 'き'],
         posterLine3: ['上', 'げ', '😡', '✊'],
         posterLine4: ['💥', 'タ', 'イ', 'ム'],
-        step1Tag: 'STEP 01 // VIBE CHECK',
         step1Title: 'いま、どんな気分？',
         anger: 'いらいら',
         sadness: '悲しい',
         unfairness: '理不尽',
         envy: '嫉妬',
         void: '虚無',
-        btnToBurn: '本日のお焚き上げをする →',
-        step2Tag: 'STEP 02 // PURIFICATION',
-        step2Title: '自分の感情のお焚き上げ',
+        step2Title: '焚き上げる内容',
         step2Sub: '吐き出した愚痴は炎上させて、匿名の供養空間へ送られます',
         placeholderRant: '理不尽な指示、消化できないイライラ... ここに書いて炎上させてください。',
-        categoryLabel: 'カテゴリ:',
-        btnExecuteBurn: '🔥 炎上させる',
+        hashtagLabel: 'ハッシュタグ',
         chaosTitle: 'みんなのお焚き上げ',
         chaosSub: '誰かが手放した感情が新聞のように重なって保管されています',
         btnGassho: '🙏 合掌',
@@ -240,20 +236,16 @@
         posterLine2: ['A', '💢', 'Y', 'S'],
         posterLine3: ['B', 'U', '😡', 'R'],
         posterLine4: ['💥', 'N', 'I', 'N'],
-        step1Tag: 'STEP 01 // VIBE CHECK',
         step1Title: 'How are you feeling right now?',
         anger: 'Anger',
         sadness: 'Sadness',
         unfairness: 'Unfairness',
         envy: 'Envy',
         void: 'Void',
-        btnToBurn: 'Do Today’s Purification →',
-        step2Tag: 'STEP 02 // PURIFICATION',
-        step2Title: 'SOLO PURIFICATION',
+        step2Title: 'Content to Burn',
         step2Sub: 'Set your emotions ablaze into the public archive',
         placeholderRant: 'Unfair words, lingering anger... Write & set them ablaze here.',
-        categoryLabel: 'Category:',
-        btnExecuteBurn: '🔥 Set Ablaze (Enjo)',
+        hashtagLabel: 'Hashtags',
         chaosTitle: 'PUBLIC ARCHIVES',
         chaosSub: 'Overlapping records of released emotions',
         btnGassho: '🙏 Pray',
@@ -281,7 +273,7 @@
 
     let rantText = '';
     let categoryTags = ['#仕事', '#人間関係', '#恋愛', '#自分', '#理不尽', '#社会'];
-    let selectedTag = '#仕事';
+    let selectedTags = ['#仕事']; // 複数選択可能に保持
 
     // 投稿一覧
     let posts = [
@@ -293,7 +285,7 @@
         vibeCategory: 'いらいら',
         authorVibe: { anger: 90, sadness: 20, unfairness: 85, envy: 10, void: 40 },
         gasshoCount: 142,
-        tag: '#仕事',
+        tag: '#仕事 #人間関係',
       },
       {
         id: 'post-2',
@@ -303,7 +295,7 @@
         vibeCategory: '嫉妬',
         authorVibe: { anger: 50, sadness: 70, unfairness: 40, envy: 95, void: 30 },
         gasshoCount: 289,
-        tag: '#恋愛',
+        tag: '#恋愛 #執着',
       },
       {
         id: 'post-3',
@@ -313,7 +305,7 @@
         vibeCategory: '理不尽',
         authorVibe: { anger: 95, sadness: 30, unfairness: 100, envy: 15, void: 20 },
         gasshoCount: 512,
-        tag: '#理不尽',
+        tag: '#仕事 #理不尽',
       },
       {
         id: 'post-4',
@@ -333,7 +325,7 @@
         vibeCategory: '悲しい',
         authorVibe: { anger: 20, sadness: 95, unfairness: 75, envy: 40, void: 80 },
         gasshoCount: 341,
-        tag: '#自分',
+        tag: '#自分 #社会',
       }
     ];
 
@@ -368,7 +360,7 @@
         ctx.stroke();
       });
 
-      // 5軸の角度（上、右上、右下、左下、左上）
+      // 5軸の角度
       const angles = [
         -Math.PI / 2,                          // 上: いらいら
         -Math.PI / 2 + (Math.PI * 2 / 5),       // 右上: 理不尽
@@ -393,23 +385,20 @@
 
       const vibeValues = [anger, unfairness, voidVal, envy, sadness];
 
-      // --- パラメータ値に対応する「5角形変形・トゲトゲ・パンク」顔輪郭描画 ---
+      // 顔輪郭描画
       ctx.beginPath();
-      const numPoints = 15; // 頂点数を増やして5角形から角・トゲが生えたパンク状にする
+      const numPoints = 15;
       for (let i = 0; i < numPoints; i++) {
         const theta = (i / numPoints) * Math.PI * 2 - Math.PI / 2;
-        // 5つの軸に対する影響を補間計算
         const sector = (theta + Math.PI / 2 + Math.PI * 2) % (Math.PI * 2);
         const sectorIdx = Math.floor(sector / (Math.PI * 2 / 5)) % 5;
         const nextSectorIdx = (sectorIdx + 1) % 5;
         const ratio = (sector % (Math.PI * 2 / 5)) / (Math.PI * 2 / 5);
 
-        // 各軸の強度から頂点の膨張・角張りを決定
         const currentVibe = vibeValues[sectorIdx];
         const nextVibe = vibeValues[nextSectorIdx];
         const interpolatedVibe = currentVibe * (1 - ratio) + nextVibe * ratio;
 
-        // トゲトゲ・パンク変形（奇数インデックスで少し引っ込んで星型・角張り・膨張）
         let spike = (i % 3 === 0) ? (1 + interpolatedVibe * 0.4) : (0.85 + interpolatedVibe * 0.2);
         let r = (width * 0.18) + (radiusMax * 0.55 * interpolatedVibe * spike);
 
@@ -552,8 +541,8 @@
       if (currentStep === 'vibe_check') {
         const faceCanvas = document.getElementById('vibe-face-canvas');
         if (faceCanvas) {
-          faceCanvas.width = 250;
-          faceCanvas.height = 250;
+          faceCanvas.width = 230;
+          faceCanvas.height = 230;
           drawMinimalDistortedFace(faceCanvas, vibes, true);
         }
       } else if (currentStep === 'chaos_gallery') {
@@ -589,10 +578,9 @@
             </div>
           </div>
 
-          <!-- メインタイポグラフィポスター (フォント太さ統一) -->
+          <!-- メインタイポグラフィポスター -->
           <div class="my-auto space-y-4 md:space-y-6 py-2 flex flex-col items-center">
             
-            <!-- 1行目 -->
             <div class="poster-row">
               <span class="poster-char">${t.posterLine1[0]}</span>
               <span class="poster-char">${t.posterLine1[1]}</span>
@@ -600,7 +588,6 @@
               <span class="poster-char">${t.posterLine1[3]}</span>
             </div>
 
-            <!-- 2行目 -->
             <div class="poster-row">
               <span class="poster-char">${t.posterLine2[0]}</span>
               <span class="poster-emoji">${t.posterLine2[1]}</span>
@@ -608,7 +595,6 @@
               <span class="poster-char">${t.posterLine2[3]}</span>
             </div>
 
-            <!-- 3行目 -->
             <div class="poster-row">
               <span class="poster-char">${t.posterLine3[0]}</span>
               <span class="poster-char">${t.posterLine3[1]}</span>
@@ -616,7 +602,6 @@
               <span class="poster-emoji">${t.posterLine3[3]}</span>
             </div>
 
-            <!-- 4行目 -->
             <div class="poster-row">
               <span class="poster-emoji">${t.posterLine4[0]}</span>
               <span class="poster-char">${t.posterLine4[1]}</span>
@@ -637,79 +622,68 @@
       `;
     }
 
-    // --- STEP 1: 自分の感情設定（幅を狭く・位置を少し下へ調整） ---
+    // --- STEP 1: 自分の感情設定（幅をかなりコンパクトに・パーセンテージ非表示・二重説明消去・丸矢印ボタン） ---
     function renderStep1VibeCheck() {
       const t = i18n[currentLang];
       return `
-        <div class="flex-1 flex flex-col items-center justify-center pt-8 pb-4 fade-in">
+        <div class="flex-1 flex flex-col items-center justify-center pt-10 pb-6 fade-in">
           <div class="text-center mb-6">
-            <h2 class="text-2xl font-black tracking-tight text-black">
+            <h2 class="text-xl font-black tracking-tight text-black">
               ${t.step1Title}
             </h2>
           </div>
 
-          <!-- 左右の幅をコンパクト（px-8 / max-w-[82%]）に絞る -->
-          <div class="w-full max-w-[85%] mx-auto bg-white flex flex-col items-center">
-            <div class="flex justify-center mb-5">
+          <!-- 横幅をもっとコンパクト（max-w-[68%]）に絞って左右余白を広く確保 -->
+          <div class="w-full max-w-[68%] mx-auto bg-white flex flex-col items-center">
+            <div class="flex justify-center mb-6">
               <canvas id="vibe-face-canvas" class="block max-w-full h-auto cursor-pointer"></canvas>
             </div>
 
+            <!-- パーセンテージ表示および二重説明(flowy等)を消去 -->
             <div class="w-full space-y-4 text-xs font-bold">
               <div>
-                <div class="flex justify-between text-black mb-1.5">
-                  <span>${t.anger} (flowy)</span>
-                  <span class="text-black" id="val-anger">${vibes.anger}%</span>
-                </div>
+                <div class="text-black mb-1.5 font-bold">${t.anger}</div>
                 <input type="range" min="0" max="100" value="${vibes.anger}" data-key="anger" class="vibe-slider w-full cursor-pointer">
               </div>
 
               <div>
-                <div class="flex justify-between text-black mb-1.5">
-                  <span>${t.sadness} (moody)</span>
-                  <span class="text-black" id="val-sadness">${vibes.sadness}%</span>
-                </div>
+                <div class="text-black mb-1.5 font-bold">${t.sadness}</div>
                 <input type="range" min="0" max="100" value="${vibes.sadness}" data-key="sadness" class="vibe-slider w-full cursor-pointer">
               </div>
 
               <div>
-                <div class="flex justify-between text-black mb-1.5">
-                  <span>${t.unfairness} (deep)</span>
-                  <span class="text-black" id="val-unfairness">${vibes.unfairness}%</span>
-                </div>
+                <div class="text-black mb-1.5 font-bold">${t.unfairness}</div>
                 <input type="range" min="0" max="100" value="${vibes.unfairness}" data-key="unfairness" class="vibe-slider w-full cursor-pointer">
               </div>
 
               <div>
-                <div class="flex justify-between text-black mb-1.5">
-                  <span>${t.envy} (playful)</span>
-                  <span class="text-black" id="val-envy">${vibes.envy}%</span>
-                </div>
+                <div class="text-black mb-1.5 font-bold">${t.envy}</div>
                 <input type="range" min="0" max="100" value="${vibes.envy}" data-key="envy" class="vibe-slider w-full cursor-pointer">
               </div>
 
               <div>
-                <div class="flex justify-between text-black mb-1.5">
-                  <span>${t.void} (edgy)</span>
-                  <span class="text-black" id="val-void">${vibes.void}%</span>
-                </div>
+                <div class="text-black mb-1.5 font-bold">${t.void}</div>
                 <input type="range" min="0" max="100" value="${vibes.void}" data-key="void" class="vibe-slider w-full cursor-pointer">
               </div>
 
-              <!-- ボタン幅もコンパクトに統一 -->
-              <button id="btn-to-burn-step" class="w-full py-3.5 mt-8 bg-black text-white text-xs font-bold rounded-full hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2">
-                <span>${t.btnToBurn}</span>
-              </button>
+              <!-- 長方形ボタンから「円に矢印ボタン（丸い→）」へ変更 -->
+              <div class="pt-8 flex justify-center">
+                <button id="btn-to-burn-step" class="w-13 h-13 w-12 h-12 bg-black text-white text-lg font-bold rounded-full hover:bg-zinc-800 hover:scale-105 active:scale-95 transition-all flex items-center justify-center">
+                  <span>→</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
       `;
     }
 
-    // --- STEP 2: 自分の感情のお焚き上げ（中央配置・200文字制限・炎上させる・タグ自由追加） ---
+    // --- STEP 2: 焚き上げる内容（焚き上げる内容に見出し変更・ハッシュタグ複数選択・丸い炎ボタン） ---
     function renderStep2SoloBurn() {
       const t = i18n[currentLang];
       return `
         <div class="flex-1 flex flex-col justify-center my-auto py-4 fade-in">
+          <!-- 見出し：「焚き上げる内容」 -->
           <div class="text-center mb-6">
             <h2 class="text-xl font-black tracking-tight text-black">
               ${t.step2Title}
@@ -719,10 +693,11 @@
             </p>
           </div>
 
-          <div id="solo-burn-card" class="bg-white relative overflow-hidden max-w-[92%] mx-auto w-full">
+          <div id="solo-burn-card" class="bg-white relative overflow-hidden max-w-[90%] mx-auto w-full">
             <canvas id="fire-canvas" class="absolute inset-0 z-50 pointer-events-none w-full h-full hidden"></canvas>
 
-            <div class="mb-3 relative">
+            <!-- 入力欄は真ん中・200文字制限 -->
+            <div class="mb-4 relative">
               <textarea
                 id="rant-textarea"
                 maxlength="200"
@@ -730,23 +705,25 @@
                 rows="5"
                 class="w-full bg-paper text-black p-4 border border-paper-border focus:border-black focus:outline-none font-bold text-xs leading-relaxed resize-none rounded-2xl"
               >${rantText}</textarea>
-              <!-- 200文字カウント表示 -->
               <div class="text-right text-[10px] font-mono text-zinc-400 mt-1">
                 <span id="char-count">${rantText.length}</span> / 200
               </div>
             </div>
 
-            <!-- カテゴリ（既存タグ＋タグ自由追加機能） -->
+            <!-- 見出し：「ハッシュタグ」（複数選択可能） -->
             <div class="mb-6">
-              <span class="block text-xs font-bold text-black mb-2">${t.categoryLabel}</span>
+              <span class="block text-xs font-bold text-black mb-2">${t.hashtagLabel}</span>
               <div class="flex flex-wrap gap-2 font-bold text-xs items-center">
-                ${categoryTags.map(tag => `
-                  <button data-tag="${tag}" class="tag-btn px-3 py-1.5 rounded-full border ${
-                    selectedTag === tag ? 'bg-black text-white border-black' : 'bg-paper text-black border-paper-border'
-                  } transition-colors">${tag}</button>
-                `).join('')}
+                ${categoryTags.map(tag => {
+                  const isSelected = selectedTags.includes(tag);
+                  return `
+                    <button data-tag="${tag}" class="tag-btn px-3 py-1.5 rounded-full border ${
+                      isSelected ? 'bg-black text-white border-black' : 'bg-paper text-black border-paper-border'
+                    } transition-colors">${tag}</button>
+                  `;
+                }).join('')}
 
-                <!-- 新規タグ追加インプット & ボタン -->
+                <!-- ハッシュタグ自由追加 -->
                 <div class="flex items-center gap-1">
                   <input
                     type="text"
@@ -761,13 +738,15 @@
               </div>
             </div>
 
-            <!-- 炎上させるボタン -->
-            <button
-              id="btn-execute-burn"
-              class="w-full py-4 bg-black text-white text-xs font-bold rounded-full hover:bg-zinc-800 transition-colors cursor-pointer"
-            >
-              ${t.btnExecuteBurn}
-            </button>
+            <!-- 「🔥炎上させる」を「円に炎（丸い🔥ボタン）」に変更 -->
+            <div class="flex justify-center pt-2">
+              <button
+                id="btn-execute-burn"
+                class="w-14 h-14 bg-black text-white text-2xl rounded-full hover:bg-zinc-800 hover:scale-105 active:scale-95 transition-all flex items-center justify-center cursor-pointer"
+              >
+                <span>🔥</span>
+              </button>
+            </div>
           </div>
         </div>
       `;
@@ -931,9 +910,6 @@
           const val = Number(e.target.value);
           vibes[key] = val;
 
-          const valSpan = document.getElementById(`val-${key}`);
-          if (valSpan) valSpan.innerText = `${val}%`;
-
           soundEngine.playSubtleClick();
 
           const faceCanvas = document.getElementById('vibe-face-canvas');
@@ -943,7 +919,7 @@
         };
       });
 
-      // STEP 1 -> STEP 2
+      // STEP 1 -> STEP 2 (丸矢印ボタン)
       const toBurnBtn = document.getElementById('btn-to-burn-step');
       if (toBurnBtn) {
         toBurnBtn.onclick = () => {
@@ -965,15 +941,25 @@
         };
       }
 
-      // カテゴリタグ選択
+      // ハッシュタグ複数選択処理
       document.querySelectorAll('.tag-btn').forEach(btn => {
         btn.onclick = (e) => {
-          selectedTag = e.target.dataset.tag;
+          const tag = e.currentTarget.dataset.tag;
+          if (selectedTags.includes(tag)) {
+            // 選択解除（最低1つは維持）
+            if (selectedTags.length > 1) {
+              selectedTags = selectedTags.filter(t => t !== tag);
+            }
+          } else {
+            // 選択追加
+            selectedTags.push(tag);
+          }
+          soundEngine.playSubtleClick();
           renderApp();
         };
       });
 
-      // 新規タグ追加ボタン
+      // ハッシュタグ自由追加ボタン
       const addTagBtn = document.getElementById('btn-add-tag');
       if (addTagBtn) {
         addTagBtn.onclick = () => {
@@ -983,7 +969,7 @@
             if (!val.startsWith('#')) val = '#' + val;
             if (!categoryTags.includes(val)) {
               categoryTags.push(val);
-              selectedTag = val;
+              selectedTags.push(val);
               soundEngine.playSubtleClick();
               renderApp();
             }
@@ -991,7 +977,7 @@
         };
       }
 
-      // STEP 2 -> STEP 3 炎上させる実行
+      // STEP 2 -> STEP 3 丸い炎ボタンで実行
       const executeBurnBtn = document.getElementById('btn-execute-burn');
       if (executeBurnBtn) {
         executeBurnBtn.onclick = () => {
@@ -1060,7 +1046,7 @@
                   vibeCategory: vibeNameMap[maxVibeKey] || 'お焚き上げ',
                   authorVibe: { ...vibes },
                   gasshoCount: 1,
-                  tag: selectedTag,
+                  tag: selectedTags.join(' '),
                 });
 
                 burnStats.totalBurned += 1;
