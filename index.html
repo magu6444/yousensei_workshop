@@ -604,6 +604,83 @@
       return dataUrl;
     }
 
+    function generateUniqueAccount(vibes, text) {
+      // 1. 感情の最大値（最も値の高いもの）を調べる
+      const emotionKeys = ['anger', 'sadness', 'unfairness', 'envy', 'void'];
+      let maxEmotion = 'void';
+      let maxVal = -1;
+      
+      emotionKeys.forEach(key => {
+        const val = vibes[key] || 0;
+        if (val > maxVal) {
+          maxVal = val;
+          maxEmotion = key;
+        }
+      });
+      
+      // 最大感情に応じた形容詞
+      let adjective = '穏やかな';
+      if (maxVal > 20) {
+        switch (maxEmotion) {
+          case 'anger':
+            adjective = '爆発寸前の';
+            break;
+          case 'sadness':
+            adjective = '涙目の';
+            break;
+          case 'unfairness':
+            adjective = '理不尽に抗う';
+            break;
+          case 'envy':
+            adjective = '隣を気にする';
+            break;
+          case 'void':
+            adjective = 'からっぽの';
+            break;
+        }
+      }
+
+      // 2. テキストの特徴（文字数やキーワード）から名詞を決定
+      let noun = '修行僧';
+      const textLen = text.length;
+      
+      if (text.includes('仕事') || text.includes('会社') || text.includes('上司') || text.includes('同僚')) {
+        noun = '労働者';
+      } else if (text.includes('疲') || text.includes('ねむ') || text.includes('眠')) {
+        noun = 'おやすみ羊';
+      } else if (text.includes('恋愛') || text.includes('好き') || text.includes('彼') || text.includes('彼女')) {
+        noun = 'ロマンチスト';
+      } else if (text.includes('お金') || text.includes('金') || text.includes('財布') || text.includes('買')) {
+        noun = '買い物袋';
+      } else if (textLen > 120) {
+        noun = 'マシンガン';
+      } else if (textLen > 60) {
+        noun = '語り部';
+      } else if (textLen < 20) {
+        noun = 'ポエマー';
+      } else {
+        const nouns = ['うさぎ', 'プリン', '流れ星', '旅人', 'こたつ犬', '匿名キリン'];
+        const seed = (textLen + maxVal) % nouns.length;
+        noun = nouns[seed];
+      }
+
+      const userName = `${adjective}${noun}`;
+      
+      // 3. IDの決定
+      const emotionEng = {
+        anger: 'angry',
+        sadness: 'sad',
+        unfairness: 'unlucky',
+        envy: 'jealous',
+        void: 'empty'
+      };
+      const typeStr = maxVal > 20 ? emotionEng[maxEmotion] : 'calm';
+      const randNum = Math.floor(100 + Math.random() * 900); // 100-999
+      const userId = `@${typeStr}_${randNum}`;
+
+      return { userName, userId };
+    }
+
     function pushVibesHistory() {
       const copy = { ...vibes };
       if (vibesHistoryIndex < vibesHistory.length - 1) {
@@ -903,125 +980,17 @@
 
       ctx.clearRect(0, 0, width, height);
 
-      const radiusMax = width * (showMetrics ? 0.32 : 0.44);
-
-      // 本物の 3D WebGL 球体のみを綺麗にレンダリング
       const activePhoto = customPhotoImg || capturedPhotoImg || fallbackUserFaceImg;
 
-      if (window.THREE && activePhoto && activePhoto.complete && activePhoto.width > 0) {
-        if (!canvas._threeRenderer) {
-          const threeCanvas = document.createElement('canvas');
-          threeCanvas.width = 512;
-          threeCanvas.height = 512;
-
-          const renderer = new THREE.WebGLRenderer({ canvas: threeCanvas, alpha: true, antialias: true });
-          renderer.setSize(512, 512);
-          renderer.setPixelRatio(2);
-
-          const scene = new THREE.Scene();
-          const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
-          camera.position.z = 3.6;
-
-          const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
-          scene.add(ambientLight);
-
-          const dirLight = new THREE.DirectionalLight(0xffffff, 0.65);
-          dirLight.position.set(2, 3, 4);
-          scene.add(dirLight);
-
-          // 高解像度 3D 球体（SphereGeometry: 96x96 分割でスムーズな変形を実現）
-          const geometry = new THREE.SphereGeometry(1.2, 96, 96);
-
-          const texture = new THREE.CanvasTexture(activePhoto);
-          texture.wrapS = THREE.ClampToEdgeWrapping;
-          texture.wrapT = THREE.ClampToEdgeWrapping;
-
-          const material = new THREE.MeshPhongMaterial({
-            map: texture,
-            shininess: 30,
-            specular: 0x333333,
-            side: THREE.FrontSide
-          });
-
-          const sphereMesh = new THREE.Mesh(geometry, material);
-          sphereMesh.rotation.y = -Math.PI / 2;
-          scene.add(sphereMesh);
-
-          const initialPositions = geometry.attributes.position.array.slice();
-
-          canvas._threeRenderer = renderer;
-          canvas._threeScene = scene;
-          canvas._threeCamera = camera;
-          canvas._threeMesh = sphereMesh;
-          canvas._threeTexture = texture;
-          canvas._threeGeo = geometry;
-          canvas._threeInitialPos = initialPositions;
-        }
-
-        // テクスチャの更新
-        if (canvas._threeTexture.image !== activePhoto) {
-          canvas._threeTexture.image = activePhoto;
-          canvas._threeTexture.needsUpdate = true;
-        }
-
-        // --- 直接タッチドラッグによる頂点変形（トゲトゲしく劇的な変形） ---
-        const geo = canvas._threeGeo;
-        const posAttr = geo.attributes.position;
-        const posArray = posAttr.array;
-        const initPos = canvas._threeInitialPos;
-        const deformPoints = canvas._deformPoints || [];
-
-        for (let i = 0; i < posArray.length; i += 3) {
-          let x = initPos[i];
-          let y = initPos[i + 1];
-          let z = initPos[i + 2];
-
-          // 各変形ポイントからの影響を累積
-          for (const dp of deformPoints) {
-            const vdx = x - dp.x3d;
-            const vdy = y - dp.y3d;
-            const vdz = z - dp.z3d;
-            const distSq = vdx * vdx + vdy * vdy + vdz * vdz;
-
-            // シャープなガウス分布（sigma小さめ → トゲトゲしい局所変形）
-            const sigma = dp.sigma || 0.22;
-            const sigmaSq = sigma * sigma;
-            const weight = Math.exp(-distSq / (2 * sigmaSq));
-
-            if (weight > 0.001) {
-              // 法線方向にも引っ張ることで立体的なトゲ感を出す
-              const nx = initPos[i];
-              const ny = initPos[i + 1];
-              const nz = initPos[i + 2];
-              const nLen = Math.sqrt(nx*nx + ny*ny + nz*nz) || 1;
-              const normalScale = dp.normalPull || 0;
-
-              x += dp.dx * weight + (nx / nLen) * normalScale * weight;
-              y += dp.dy * weight + (ny / nLen) * normalScale * weight;
-              z += dp.dz * weight + (nz / nLen) * normalScale * weight;
-            }
-          }
-
-          posArray[i] = x;
-          posArray[i + 1] = y;
-          posArray[i + 2] = z;
-        }
-
-        posAttr.needsUpdate = true;
-        geo.computeVertexNormals();
-
-        // 3D レンダリング実行
-        canvas._threeRenderer.render(canvas._threeScene, canvas._threeCamera);
-
-        // Rendered WebGL Offscreen Canvas をメイン 2D Canvas の中央にプロジェクション描画
+      if (activePhoto && (activePhoto.complete || activePhoto.width > 0)) {
+        const radiusMax = width * (showMetrics ? 0.32 : 0.44);
         const rSize = radiusMax * 2.3;
-        ctx.drawImage(
-          canvas._threeRenderer.domElement,
-          cx - rSize / 2, cy - rSize / 2, rSize, rSize
-        );
+        
+        ctx.save();
+        // 歪まずにきれいに中央に描画します
+        ctx.drawImage(activePhoto, cx - rSize / 2, cy - rSize / 2, rSize, rSize);
+        ctx.restore();
       }
-
-      // 3D球体のみをスッキリ表示（5項目テキストラベル非表示）
     }
 
     function drawTexturedTriangle(ctx, img, s, d) {
@@ -1291,41 +1260,40 @@
         // 撮影完了後の調整画面
         const activePhotoSrc = capturedPhotoImg ? capturedPhotoImg.src : 'images/face_preset_0.jpg';
         return `
-          <div class="screen-container bg-white fade-in select-none" style="padding-top: max(2.2rem, calc(env(safe-area-inset-top) + 1.5rem)); overflow-y: auto;">
-            <div class="text-center pt-0 mb-3 flex-shrink-0">
-              <h2 style="font-family: 'LINE Seed Sans', 'LINE Seed JP', sans-serif; font-weight: 700; font-size: 6.5vw; color: #111; line-height: 1.1; letter-spacing: -0.02em;">
+          <div class="screen-container bg-white fade-in select-none" style="padding-top: max(1.2rem, calc(env(safe-area-inset-top) + 0.5rem)); overflow-y: hidden; height: 100vh; display: flex; flex-direction: column; justify-content: space-between;">
+            <div class="text-center pt-0 mb-1 flex-shrink-0">
+              <h2 style="font-family: 'LINE Seed Sans', 'LINE Seed JP', sans-serif; font-weight: 700; font-size: 5.5vw; color: #111; line-height: 1.1; letter-spacing: -0.02em;">
                 ${t.step1Title}
               </h2>
-              <p class="text-[11px] font-bold text-zinc-400 mt-1 lowercase tracking-wider">
+              <p class="text-[10px] font-bold text-zinc-400 mt-0.5 lowercase tracking-wider">
                 adjust your emotion vibes
               </p>
             </div>
 
-            <!-- 切り抜いた顔の表示とCSS歪み適用 -->
-            <div class="w-full flex flex-col items-center justify-center my-3 flex-shrink-0">
-              <div class="relative w-[180px] h-[180px] rounded-full flex items-center justify-center bg-zinc-50 border border-zinc-100">
-                <img id="vibe-face-preview-img" src="${activePhotoSrc}" class="w-[160px] h-[160px] rounded-full object-cover shadow-md" style="${getDistortionStyle(vibes)}" />
+            <!-- 切り抜いた顔の表示 (五角形) -->
+            <div class="w-full flex flex-col items-center justify-center my-1 flex-shrink-0">
+              <div class="relative w-[130px] h-[130px] flex items-center justify-center bg-zinc-50 border border-zinc-100" style="clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);">
+                <img id="vibe-face-preview-img" src="${activePhotoSrc}" class="w-[110px] h-[110px] object-cover shadow-md" style="clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%); ${getDistortionStyle(vibes)}" />
               </div>
             </div>
 
-            <!-- Do / Undo 操作エリア (添付された指差し画像) -->
-            <div class="flex items-center justify-center gap-8 mb-4 flex-shrink-0">
-              <button id="btn-undo" class="w-14 h-10 hover:scale-110 active:scale-90 transition-all flex items-center justify-center cursor-pointer">
+            <!-- Do / Undo 操作エリア -->
+            <div class="flex items-center justify-center gap-6 mb-1.5 flex-shrink-0">
+              <button id="btn-undo" class="w-12 h-8 hover:scale-110 active:scale-90 transition-all flex items-center justify-center cursor-pointer">
                 <img src="images/btn_hand_left.png" alt="Undo" class="w-full h-full object-contain" />
               </button>
-              <span class="text-[10px] font-mono font-bold text-zinc-400 tracking-wider">HISTORY</span>
-              <button id="btn-redo" class="w-14 h-10 hover:scale-110 active:scale-90 transition-all flex items-center justify-center cursor-pointer">
+              <span class="text-[9px] font-mono font-bold text-zinc-400 tracking-wider">HISTORY</span>
+              <button id="btn-redo" class="w-12 h-8 hover:scale-110 active:scale-90 transition-all flex items-center justify-center cursor-pointer">
                 <img src="images/btn_hand_right.png" alt="Redo" class="w-full h-full object-contain" />
               </button>
             </div>
 
-            <!-- 5つの感情スライダー -->
-            <div class="w-full max-w-[320px] mx-auto space-y-3 px-4 flex-1">
+            <!-- 5つの感情スライダー (数値を非表示・余白を削減) -->
+            <div class="w-full max-w-[280px] mx-auto space-y-1.5 px-4 flex-1 flex flex-col justify-center">
               ${['anger', 'sadness', 'unfairness', 'envy', 'void'].map(key => `
                 <div class="flex flex-col">
                   <div class="flex justify-between items-center mb-0.5">
                     <span class="text-xs font-bold text-black">${t[key]}</span>
-                    <span id="val-${key}" class="text-[10px] font-mono font-bold text-zinc-400">${vibes[key]}</span>
                   </div>
                   <input
                     type="range"
@@ -1340,9 +1308,9 @@
               `).join('')}
             </div>
 
-            <!-- 決定ボタン (添付された親指の画像) -->
-            <div class="w-full flex justify-center pt-5 pb-8 flex-shrink-0">
-              <button id="btn-to-burn-step" class="w-24 h-24 hover:scale-110 active:scale-90 transition-all flex items-center justify-center cursor-pointer">
+            <!-- 決定ボタン -->
+            <div class="w-full flex justify-center pt-2 pb-4 flex-shrink-0">
+              <button id="btn-to-burn-step" class="w-16 h-16 hover:scale-110 active:scale-90 transition-all flex items-center justify-center cursor-pointer">
                 <img src="images/btn_thumb_ok.png" alt="決定" class="w-full h-full object-contain" />
               </button>
             </div>
@@ -1429,7 +1397,7 @@
                 </div>
 
                 <div class="flex-shrink-0">
-                  <div class="w-12 h-12 bg-white flex items-center justify-center">
+                  <div class="w-12 h-12 bg-white flex items-center justify-center" style="clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);">
                     <canvas id="card-canvas-${post.id}" class="block"></canvas>
                   </div>
                 </div>
@@ -1487,8 +1455,8 @@
               
               <div class="p-4 bg-zinc-50 border-b border-zinc-200 flex-shrink-0">
                 <div class="flex gap-3">
-                  <div class="w-11 h-11 flex items-center justify-center flex-shrink-0 overflow-hidden rounded-full border border-zinc-100 bg-zinc-50">
-                    <img src="${p.customPhotoData || p.customPhoto || 'images/face_preset_0.jpg'}" class="w-9 h-9 rounded-full object-cover" style="${getDistortionStyle(p.authorVibe)}" />
+                  <div class="w-11 h-11 flex items-center justify-center flex-shrink-0 overflow-hidden border border-zinc-100 bg-zinc-50" style="clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);">
+                    <img src="${p.customPhotoData || p.customPhoto || 'images/face_preset_0.jpg'}" class="w-9 h-9 object-cover" style="clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%); ${getDistortionStyle(p.authorVibe)}" />
                   </div>
                   <div class="min-w-0 flex-1">
                     <div class="flex items-center gap-2 text-xs mb-1">
@@ -1882,10 +1850,11 @@
           triggerRealFireBurnSimulation(() => {
             const instantReplies = generateContextualSympatheticEnjoReplies(val);
 
+            const account = generateUniqueAccount(vibes, val);
             const newPost = {
               id: `post-${Date.now()}-${Math.floor(Math.random()*1000)}`,
-              userName: 'あなたのお焚き上げ',
-              userId: '@my_otakiage',
+              userName: account.userName,
+              userId: account.userId,
               dateStr: 'たった今',
               text: val,
               authorVibe: { ...vibes },
