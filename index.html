@@ -74,7 +74,7 @@
     .poster-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      row-gap: 1.2rem; /* 行間をもっとゆったり確保 */
+      row-gap: 1.2rem;
       column-gap: 0.5rem;
       width: 100%;
       max-width: 340px;
@@ -147,7 +147,7 @@
       cursor: pointer;
     }
 
-    /* 上スワイプでお焚き上げカードが吸い込まれるダイナミックアイランド風アニメーション */
+    /* 上スワイプでお焚き上げカードが吸い込まれるアニメーション */
     .dynamic-island-absorb {
       animation: absorbToIsland 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
     }
@@ -175,7 +175,7 @@
       }
     }
 
-    /* スマホ疑似ダイナミックアイランド通知バー（デフォルトは完全非表示） */
+    /* スマホダイナミックアイランド（アクション中のみJSで動的に表示） */
     #dynamic-island-notch {
       position: fixed;
       top: max(8px, env(safe-area-inset-top));
@@ -186,7 +186,7 @@
       background-color: #000000;
       border-radius: 20px;
       z-index: 9999;
-      display: flex;
+      display: none; /* デフォルト完全非表示 */
       align-items: center;
       justify-content: center;
       color: #ffffff;
@@ -197,6 +197,7 @@
     }
 
     #dynamic-island-notch.expanding {
+      display: flex !important;
       width: 240px;
       height: 42px;
       background-color: #111111;
@@ -221,8 +222,8 @@
 </head>
 <body class="bg-white text-paper-dark min-h-screen flex flex-col antialiased">
 
-  <!-- 画面上部ダイナミックアイランド（スワイプお焚き上げ時のみ出現） -->
-  <div id="dynamic-island-notch" class="hidden">
+  <!-- 画面上部ダイナミックアイランド（お焚き上げボタンアクション時のみ表示） -->
+  <div id="dynamic-island-notch">
     <span id="island-status-text">🔥 焚き上げ中...</span>
   </div>
 
@@ -269,7 +270,7 @@
       }
     };
 
-    // --- カメラ・高精度皮膚・顔面パーツセグメンテーション抽出 ---
+    // --- カメラ・自撮りテクスチャ ＆ 顔面ドアップ・5角形モザイク切り抜きプロセス ---
     let capturedPhotoImg = null;
 
     function createDefaultFaceTexture() {
@@ -278,21 +279,25 @@
       canvas.height = 300;
       const ctx = canvas.getContext('2d');
 
-      ctx.clearRect(0, 0, 300, 300);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, 300, 300);
 
+      // 人肌ベース
       const skinGrad = ctx.createRadialGradient(150, 150, 20, 150, 150, 140);
       skinGrad.addColorStop(0, '#FFE4D6');
       skinGrad.addColorStop(0.7, '#F7D0BC');
       skinGrad.addColorStop(1, '#EBB59D');
       ctx.fillStyle = skinGrad;
       ctx.beginPath();
-      ctx.arc(150, 150, 135, 0, Math.PI * 2);
+      ctx.arc(150, 150, 140, 0, Math.PI * 2);
       ctx.fill();
 
+      // 眉
       ctx.strokeStyle = '#3A2E2B'; ctx.lineWidth = 5; ctx.lineCap = 'round';
       ctx.beginPath(); ctx.moveTo(85, 105); ctx.quadraticCurveTo(115, 95, 140, 108); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(160, 108); ctx.quadraticCurveTo(185, 95, 215, 105); ctx.stroke();
 
+      // 目
       ctx.fillStyle = '#1F1A17';
       ctx.beginPath(); ctx.ellipse(110, 135, 18, 11, 0, 0, Math.PI * 2); ctx.fill();
       ctx.beginPath(); ctx.ellipse(190, 135, 18, 11, 0, 0, Math.PI * 2); ctx.fill();
@@ -300,9 +305,11 @@
       ctx.beginPath(); ctx.arc(114, 132, 5, 0, Math.PI * 2); ctx.fill();
       ctx.beginPath(); ctx.arc(194, 132, 5, 0, Math.PI * 2); ctx.fill();
 
+      // 鼻
       ctx.strokeStyle = '#D49E85'; ctx.lineWidth = 4;
       ctx.beginPath(); ctx.moveTo(150, 135); ctx.lineTo(145, 175); ctx.lineTo(155, 178); ctx.stroke();
 
+      // 口
       ctx.strokeStyle = '#C96F68'; ctx.lineWidth = 5;
       ctx.beginPath(); ctx.arc(150, 205, 22, 0.1, Math.PI - 0.1); ctx.stroke();
 
@@ -327,7 +334,7 @@
             video.onloadedmetadata = () => {
               video.play();
               setTimeout(() => {
-                captureAndIsolateFaceFromVideo(video);
+                captureProcessFacePhoto(video);
                 stream.getTracks().forEach(t => t.stop());
                 onSuccess(true);
               }, 300);
@@ -342,14 +349,16 @@
       }
     }
 
-    function captureAndIsolateFaceFromVideo(video) {
+    // 【プロセス】写真を撮る ▶︎ 顔をドアップにする ▶︎ 顔面をきれいな5角形に切り抜く ▶︎ 軽くスタイリッシュなモザイクをかける
+    function captureProcessFacePhoto(video) {
       const canvas = document.getElementById('captured-photo-canvas');
       if (!canvas || !video) return;
       const rawW = video.videoWidth || 300;
       const rawH = video.videoHeight || 300;
 
-      const cropW = rawW * 0.55;
-      const cropH = rawH * 0.55;
+      // 1. 顔をドアップにズームクロップ
+      const cropW = rawW * 0.5;
+      const cropH = rawH * 0.5;
       const cropX = (rawW - cropW) / 2;
       const cropY = (rawH - cropH) / 2;
 
@@ -357,34 +366,47 @@
       canvas.height = 300;
       const ctx = canvas.getContext('2d');
 
-      ctx.translate(300, 0);
-      ctx.scale(-1, 1);
-      ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, 300, 300);
+      // 一時描画Canvas
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = 300;
+      tempCanvas.height = 300;
+      const tempCtx = tempCanvas.getContext('2d');
 
-      const imgData = ctx.getImageData(0, 0, 300, 300);
-      const data = imgData.data;
+      tempCtx.translate(300, 0);
+      tempCtx.scale(-1, 1);
+      tempCtx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, 300, 300);
 
-      const cx = 150, cy = 150;
-      const rx = 110, ry = 130;
+      // 2. 綺麗な正5角形パスで切り抜き
+      ctx.save();
+      ctx.beginPath();
+      const angles = [
+        -Math.PI / 2,
+        -Math.PI / 2 + (Math.PI * 2 / 5),
+        -Math.PI / 2 + (Math.PI * 4 / 5),
+        -Math.PI / 2 + (Math.PI * 6 / 5),
+        -Math.PI / 2 + (Math.PI * 8 / 5)
+      ];
+      const r = 140;
+      angles.forEach((a, idx) => {
+        const x = 150 + Math.cos(a) * r;
+        const y = 150 + Math.sin(a) * r;
+        if (idx === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.closePath();
+      ctx.clip(); // 欠けのない完全な5角形切り抜き
 
-      for (let y = 0; y < 300; y++) {
-        for (let x = 0; x < 300; x++) {
-          const idx = (y * 300 + x) * 4;
-          const r = data[idx], g = data[idx + 1], b = data[idx + 2];
+      // 3. 軽いスタイリッシュモザイク（解像度縮小描画 ▶ 拡大）
+      const mosaicSize = 36; // 軽めのピクセルモザイクサイズ
+      const mosaicCanvas = document.createElement('canvas');
+      mosaicCanvas.width = mosaicSize;
+      mosaicCanvas.height = mosaicSize;
+      const mosaicCtx = mosaicCanvas.getContext('2d');
+      mosaicCtx.drawImage(tempCanvas, 0, 0, mosaicSize, mosaicSize);
 
-          const dx = (x - cx) / rx;
-          const dy = (y - cy) / ry;
-          const distSq = dx * dx + dy * dy;
-
-          const isSkinColor = (r > 60) && (g > 40) && (b > 20) && (r > g) && (r > b) && (Math.max(r, g, b) - Math.min(r, g, b) > 15);
-
-          if (distSq > 1.0 || (!isSkinColor && distSq > 0.4)) {
-            data[idx + 3] = 0;
-          }
-        }
-      }
-
-      ctx.putImageData(imgData, 0, 0);
+      ctx.imageSmoothingEnabled = false; // ピクセルモザイク感を保持
+      ctx.drawImage(mosaicCanvas, 0, 0, 300, 300);
+      ctx.restore();
 
       const img = new Image();
       img.src = canvas.toDataURL('image/png');
@@ -591,7 +613,7 @@
       ashWeight: '1.4kg'
     };
 
-    // --- POLA APEXメッシュ変形描画 ---
+    // --- 【薄灰色の同心5角形・放射線ガイド線を顔の上に配置】 ---
     function drawPolaApexMeshDistortedFace(canvas, vibesData, showMetrics = true, customPhotoImg = null) {
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
@@ -613,22 +635,6 @@
         -Math.PI / 2 + (Math.PI * 8 / 5)
       ];
 
-      ctx.strokeStyle = '#EBEBEF';
-      ctx.lineWidth = 1;
-      [0.25, 0.5, 0.75, 1.0].forEach(r => {
-        ctx.beginPath();
-        ctx.arc(cx, cy, radiusMax * r, 0, Math.PI * 2);
-        ctx.stroke();
-      });
-
-      ctx.strokeStyle = '#F0F0F4';
-      angles.forEach(a => {
-        ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        ctx.lineTo(cx + Math.cos(a) * radiusMax, cy + Math.sin(a) * radiusMax);
-        ctx.stroke();
-      });
-
       const anger = (vibesData.anger || 0) / 100;
       const sadness = (vibesData.sadness || 0) / 100;
       const unfairness = (vibesData.unfairness || 0) / 100;
@@ -645,6 +651,7 @@
 
       const activePhoto = customPhotoImg || capturedPhotoImg || fallbackUserFaceImg;
 
+      // 1. 変形顔テクスチャを描画
       if (activePhoto && activePhoto.complete) {
         const srcW = activePhoto.width || 300;
         const srcH = activePhoto.height || 300;
@@ -663,6 +670,30 @@
           drawTexturedTriangle(ctx, activePhoto, sTriangle, dTriangle);
         }
       }
+
+      // 2. 【レイヤー順序変更】「薄い灰色の5角形＆放射線ガイド線」を顔写真の上に描画！
+      // 円ではなく同心5角形ガイド線を描画
+      ctx.strokeStyle = '#EBEBEF';
+      ctx.lineWidth = 1;
+      [0.25, 0.5, 0.75, 1.0].forEach(rScale => {
+        ctx.beginPath();
+        angles.forEach((a, idx) => {
+          const px = cx + Math.cos(a) * (radiusMax * rScale);
+          const py = cy + Math.sin(a) * (radiusMax * rScale);
+          if (idx === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        });
+        ctx.closePath();
+        ctx.stroke();
+      });
+
+      ctx.strokeStyle = '#F0F0F4';
+      angles.forEach(a => {
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + Math.cos(a) * radiusMax, cy + Math.sin(a) * radiusMax);
+        ctx.stroke();
+      });
 
       if (showMetrics) {
         ctx.fillStyle = '#111111';
@@ -808,7 +839,7 @@
       }
     }
 
-    // --- STEP 0: ロード / オープニング画面 (グリッドレイアウトで縦列完全整列 ＆ ゆったり行間) ---
+    // --- STEP 0: ロード / オープニング画面 ---
     function renderStep0Intro() {
       const t = i18n[currentLang];
       return `
@@ -824,25 +855,21 @@
           <div class="my-auto py-2 w-full flex flex-col items-center justify-center">
             
             <div class="poster-grid">
-              <!-- 1行目: 本 日 😤 の -->
               <div class="poster-cell"><span class="poster-char">${t.posterLine1[0]}</span></div>
               <div class="poster-cell"><span class="poster-char">${t.posterLine1[1]}</span></div>
               <div class="poster-cell"><span class="poster-emoji">${t.posterLine1[2]}</span></div>
               <div class="poster-cell"><span class="poster-char">${t.posterLine1[3]}</span></div>
 
-              <!-- 2行目: お 💢 焚 き -->
               <div class="poster-cell"><span class="poster-char">${t.posterLine2[0]}</span></div>
               <div class="poster-cell"><span class="poster-emoji">${t.posterLine2[1]}</span></div>
               <div class="poster-cell"><span class="poster-char">${t.posterLine2[2]}</span></div>
               <div class="poster-cell"><span class="poster-char">${t.posterLine2[3]}</span></div>
 
-              <!-- 3行目: 上 げ 😡 ✊ -->
               <div class="poster-cell"><span class="poster-cell"><span class="poster-char">${t.posterLine3[0]}</span></div>
               <div class="poster-cell"><span class="poster-char">${t.posterLine3[1]}</span></div>
               <div class="poster-cell"><span class="poster-emoji">${t.posterLine3[2]}</span></div>
               <div class="poster-cell"><span class="poster-emoji">${t.posterLine3[3]}</span></div>
 
-              <!-- 4行目: 💥 タ イ ム -->
               <div class="poster-cell"><span class="poster-emoji">${t.posterLine4[0]}</span></div>
               <div class="poster-cell"><span class="poster-char">${t.posterLine4[1]}</span></div>
               <div class="poster-cell"><span class="poster-char">${t.posterLine4[2]}</span></div>
@@ -1142,7 +1169,7 @@
       `;
     }
 
-    // --- 【ダイナミックアイランド吸い込みアニメーション（スワイプ/ボタン時のみ発動）】 ---
+    // --- 【お焚き上げアクション時のみダイナミックアイランドを起動表示】 ---
     function triggerDynamicIslandAbsorbTransition(onComplete) {
       const card = document.getElementById('solo-burn-card');
       const notch = document.getElementById('dynamic-island-notch');
@@ -1154,9 +1181,8 @@
 
       soundEngine.playSoftBurn();
 
-      // スワイプ時のみノッチをアニメーションで表示
+      // ボタン/スワイプアクション時のみノッチを拡大表示
       card.classList.add('dynamic-island-absorb');
-      notch.classList.remove('hidden');
       notch.classList.add('expanding');
 
       setTimeout(() => {
@@ -1170,7 +1196,6 @@
 
         setTimeout(() => {
           notch.classList.remove('expanding');
-          notch.classList.add('hidden');
         }, 1200);
       }, 1100);
     }
@@ -1288,7 +1313,6 @@
         };
       }
 
-      // 上スワイプによるお焚き上げ発動
       const burnCard = document.getElementById('solo-burn-card');
       let touchStartY = 0;
       if (burnCard) {
