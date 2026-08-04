@@ -169,14 +169,14 @@
       overflow: hidden;
     }
 
-    /* ポスタータイトルの縦列ピタリ整列 ＆ 行間ゆったり・文字間密着（中央配置） */
+    /* ポスタータイトルの縦列ピタリ整列 ＆ 上下左右の行間・文字間を極限まで詰める（中央配置） */
     .poster-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      row-gap: 0.6rem;
-      column-gap: -2px;
+      row-gap: 0.15rem;
+      column-gap: -6px;
       width: 100%;
-      max-width: 230px;
+      max-width: 200px;
       margin: 0 auto;
     }
 
@@ -1196,7 +1196,7 @@
 
           </div>
 
-          <div class="w-full flex justify-center pb-4">
+          <div class="w-full flex justify-center mb-12 mt-6">
             <span class="tap-entry-text text-[11px] font-bold tracking-[0.28em] text-zinc-400 uppercase">
               TAP ENTRY
             </span>
@@ -1248,10 +1248,10 @@
             </div>
           </div>
 
-          <!-- 次へ進む黒丸ボタン -->
+          <!-- 次へ進むボタン：ダウンロードのアセット 5.png に差し替え -->
           <div class="w-full flex justify-center pb-8">
-            <button id="btn-to-burn-step" class="w-12 h-12 bg-black text-white text-xl font-bold rounded-full hover:bg-zinc-800 hover:scale-105 active:scale-95 transition-all flex items-center justify-center shadow-md">
-              <span>→</span>
+            <button id="btn-to-burn-step" class="w-12 h-12 hover:scale-105 active:scale-95 transition-all flex items-center justify-center cursor-pointer">
+              <img src="images/asset_5.png" alt="次へ" class="w-12 h-12 object-contain" />
             </button>
           </div>
         </div>
