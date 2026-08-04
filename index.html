@@ -118,19 +118,6 @@
       }
     }
 
-    /* 現X (旧Twitter) 風タイムラインUI */
-    .x-post-card {
-      width: 100%;
-      background: #FFFFFF;
-      border-bottom: 1px solid #EFF3F4;
-      padding: 14px 16px;
-      transition: background-color 0.2s ease;
-      cursor: pointer;
-    }
-    .x-post-card:active {
-      background-color: #F7F9F9;
-    }
-
     /* カスタムスライダー */
     input[type=range] {
       -webkit-appearance: none;
@@ -185,62 +172,98 @@
       100% { transform: translateY(-110vh) scaleX(1.4) scaleY(1.6); opacity: 0; }
     }
 
-    /* 添付画像デザイン準拠のくぼみ・流線型ドームボトムバー */
-    .curved-bottom-bar-container {
-      position: fixed;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
+    /* --- 【新デザイン】重なり合った新聞・カードスタック掲示板 ＆ 物理スプリング弾力散開アニメーション --- */
+    .stack-container {
+      position: relative;
       width: 100%;
-      max-width: 480px;
-      height: 64px;
-      z-index: 40;
-      pointer-events: none;
-      filter: drop-shadow(0 -4px 12px rgba(0, 0, 0, 0.05));
-    }
-
-    .curved-bottom-bar-svg {
-      width: 100%;
-      height: 100%;
-      fill: #FFFFFF;
-    }
-
-    .curved-bottom-bar-buttons {
-      position: fixed;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 100%;
-      max-width: 480px;
-      height: 64px;
-      z-index: 41;
+      max-width: 360px;
+      margin: 0 auto;
+      min-height: 520px;
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 2rem;
-    }
-
-    .center-burn-button {
-      position: absolute;
-      top: -18px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 52px;
-      height: 52px;
-      border-radius: 50%;
-      background: #000000;
-      color: #FFFFFF;
-      display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      font-size: 24px;
-      font-weight: 700;
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25) !important;
-      cursor: pointer;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      padding-top: 2rem;
+      padding-bottom: 5rem;
     }
-    .center-burn-button:active {
-      transform: translateX(-50%) scale(0.92);
+
+    .newspaper-stack-card {
+      position: absolute;
+      width: 90%;
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      padding: 18px 20px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+      /* 物理的なスプリング弾力を生み出すバウンドイージング */
+      transition: transform 0.65s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
+      cursor: pointer;
+      user-select: none;
+      transform-origin: center center;
+    }
+
+    .newspaper-stack-card:hover {
+      box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.15);
+    }
+
+    /* 物理スプリング散開アニメーション状態クラス */
+    .newspaper-stack-card.slide-out-top {
+      transform: translateY(-90vh) rotate(-15deg) scale(0.7) !important;
+      opacity: 0.2;
+      pointer-events: none;
+    }
+
+    .newspaper-stack-card.slide-out-bottom {
+      transform: translateY(90vh) rotate(15deg) scale(0.7) !important;
+      opacity: 0.2;
+      pointer-events: none;
+    }
+
+    .newspaper-stack-card.expanded-center {
+      position: relative !important;
+      top: 0 !important;
+      left: 0 !important;
+      transform: translateY(0) rotate(0deg) scale(1.06) !important;
+      z-index: 100 !important;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+    }
+
+    /* モードチェンジボタン（スタック表示 ⇔ 縦リスト表示） */
+    .view-mode-toggle {
+      position: fixed;
+      top: max(12px, env(safe-area-inset-top));
+      right: 16px;
+      z-index: 50;
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #111;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06) !important;
+      cursor: pointer;
+    }
+
+    /* 前の状態のシンプル平面ボトムバー */
+    .flat-bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      max-width: 448px;
+      margin: 0 auto;
+      z-index: 40;
+      background-color: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid #EFF3F4;
+      padding: 8px 24px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
     }
 
     /* 2/3ボトムシートモーダル出現・閉じるアニメーション */
@@ -573,6 +596,8 @@
 
     let currentStep = 'intro';
     let selectedPostModal = null;
+    let expandedCardId = null; // スタック表示時の展開中カードID
+    let timelineViewMode = 'stack'; // 'stack' (重ね合わせ新聞スタック) | 'list' (従来リスト)
 
     let vibes = {
       anger: 75,
@@ -619,10 +644,32 @@
         gasshoCount: 512,
         tag: '#仕事 #理不尽',
         replies: generateContextualSympatheticEnjoReplies('「これ簡単な仕事だからさ〜」と軽いノリで丸投げしてきた営業マン。じゃあ今すぐこのコード書いてみてくださいよ。')
+      },
+      {
+        id: 'post-4',
+        userName: '通りすがりの特定班',
+        userId: '@tokutei_expert_04',
+        dateStr: '1時間前',
+        text: '「私何か悪いこと言いました？」って言ってくる奴の、自分の加害性に無自覚な顔が本当に大嫌い。',
+        authorVibe: { anger: 85, sadness: 40, unfairness: 90, envy: 20, void: 50 },
+        gasshoCount: 340,
+        tag: '#人間関係 #社会',
+        replies: generateContextualSympatheticEnjoReplies('「私何か悪いこと言いました？」って言ってくる奴の、自分の加害性に無自覚な顔が本当に大嫌い。')
+      },
+      {
+        id: 'post-5',
+        userName: '激辛ウォッチ民',
+        userId: '@gekikara_sub_05',
+        dateStr: '2時間前',
+        text: '定時退社する時に「もう帰るの？」って言ってくる先輩。契約時間終わってんだから帰るに決まってんだろ。',
+        authorVibe: { anger: 95, sadness: 10, unfairness: 95, envy: 10, void: 30 },
+        gasshoCount: 421,
+        tag: '#仕事 #理不尽',
+        replies: generateContextualSympatheticEnjoReplies('定時退社する時に「もう帰るの？」って言ってくる先輩。契約時間終わってんだから帰るに決まってんだろ。')
       }
     ];
 
-    let postIndexCount = 4;
+    let postIndexCount = 6;
     const pastRantSamples = [
       '店員さんに横柄な態度取る人とデートした。一瞬で冷めてその場で会計別々にして帰ってきた。',
       'グループLINEで私以外で遊びに行った写真流れてきた時の、心臓がシュッて冷たくなる感覚。',
@@ -816,7 +863,7 @@
       const isNavScreen = (currentStep === 'chaos_gallery' || currentStep === 'profile');
 
       root.innerHTML = `
-        <main class="flex-1 p-0 flex flex-col justify-start bg-white ${isNavScreen ? 'pb-20' : ''}">
+        <main class="flex-1 p-0 flex flex-col justify-start bg-white ${isNavScreen ? 'pb-16' : ''}">
           ${currentStep === 'vibe_check' ? renderStep1VibeCheck() : ''}
           ${currentStep === 'solo_burn' ? renderStep2SoloBurn() : ''}
           ${currentStep === 'chaos_gallery' ? renderStep3ChaosGallery() : ''}
@@ -825,39 +872,31 @@
 
         ${selectedPostModal ? renderPostDetailModal() : ''}
 
-        <!-- 【添付画像デザイン準拠】ドーム型くぼみ ＋ スタイリッシュSVGクリップボード掲示板アイコンの流線型ボトムバー -->
+        <!-- 前の状態の洗練されたクリーン平面ボトムナビバー（掲示板マーク/＋作成/マイページ） -->
         ${(isNavScreen && !selectedPostModal) ? `
-          <div class="curved-bottom-bar-container">
-            <svg class="curved-bottom-bar-svg" viewBox="0 0 375 64" preserveAspectRatio="none">
-              <!-- 滑らかなドームくぼみ曲線パス -->
-              <path d="M0,16 C40,16 60,0 120,0 C145,0 155,36 187.5,36 C220,36 230,0 255,0 C315,0 335,16 375,16 L375,64 L0,64 Z" />
-            </svg>
-          </div>
-
-          <div class="curved-bottom-bar-buttons">
-            <!-- 掲示板（クップボード・掲示板マークSVG） -->
-            <button id="nav-chaos" class="flex items-center justify-center p-2 text-black transition-transform active:scale-95">
+          <nav class="flat-bottom-nav">
+            <!-- 掲示板（クリップボード・ボードマークSVG） -->
+            <button id="nav-chaos" class="flex-1 py-1 flex justify-center items-center ${currentStep === 'chaos_gallery' ? 'text-black font-bold' : 'text-zinc-400'} hover:text-black transition-colors">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <rect x="5" y="4" width="14" height="17" rx="2" stroke="currentColor" stroke-width="2" fill="none" />
                 <path d="M9 4V2h6v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                 <line x1="9" y1="9" x2="15" y2="9" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                 <line x1="9" y1="13" x2="15" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                <line x1="9" y1="17" x2="13" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
               </svg>
             </button>
 
-            <!-- 中央浮かぶお焚き上げ＋ボタン -->
-            <div id="nav-create-burn" class="center-burn-button">
+            <!-- 中央＋お焚き上げ投稿ボタン -->
+            <button id="nav-create-burn" class="w-11 h-11 bg-black text-white rounded-full flex items-center justify-center text-2xl font-bold shadow-md hover:bg-zinc-800 active:scale-95 transition-all mx-3 flex-shrink-0">
               ＋
-            </div>
+            </button>
 
             <!-- マイページ (SVG洗練ユーザーアイコン) -->
-            <button id="nav-profile" class="flex items-center justify-center p-2 text-zinc-400 hover:text-black transition-transform active:scale-95">
+            <button id="nav-profile" class="flex-1 py-1 flex justify-center items-center ${currentStep === 'profile' ? 'text-black font-bold' : 'text-zinc-400'} hover:text-black transition-colors">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
             </button>
-          </div>
+          </nav>
         ` : ''}
       `;
 
@@ -879,13 +918,6 @@
             drawPolaApexMeshDistortedFace(cardCanvas, post.authorVibe, false, post.customPhoto);
           }
         });
-
-        window.onscroll = () => {
-          if (!selectedPostModal && (window.innerHeight + window.scrollY) >= document.body.offsetHeight - 300) {
-            generateMorePosts();
-            renderApp();
-          }
-        };
       } else if (currentStep === 'profile') {
         const profileCanvas = document.getElementById('profile-face-canvas');
         if (profileCanvas) {
@@ -1074,58 +1106,139 @@
       `;
     }
 
-    // --- STEP 3: タイムライン ---
+    // --- STEP 3: タイムライン（重なり合った新聞・カードスタック ＆ 弾力バウンド散開展開アニメーション） ---
     function renderStep3ChaosGallery() {
       const t = i18n[currentLang];
-      return `
-        <div class="flex-1 flex flex-col fade-in bg-white min-h-screen">
-          <div class="divide-y divide-paper-border">
-            ${posts.map((post) => `
-              <div data-postid="${post.id}" class="x-post-card post-item-card flex gap-3">
-                <div class="flex-shrink-0">
-                  <div class="w-11 h-11 bg-white flex items-center justify-center">
-                    <canvas id="card-canvas-${post.id}" class="block"></canvas>
-                  </div>
-                </div>
 
-                <div class="flex-1 min-w-0">
-                  <div class="flex items-center justify-between text-xs mb-1">
-                    <div class="flex items-center gap-1.5 truncate">
-                      <span class="font-bold text-black truncate">${post.userName}</span>
-                      <span class="text-zinc-500 font-mono text-[11px] truncate">${post.userId}</span>
+      if (timelineViewMode === 'stack') {
+        // 新聞スタック表示（重ね合わせカード）
+        return `
+          <div class="flex-1 flex flex-col items-center justify-center fade-in bg-white min-h-screen relative overflow-hidden">
+            
+            <!-- 表示モード切替（スタック ⇔ リスト） -->
+            <button id="btn-toggle-viewmode" class="view-mode-toggle">
+              <span>📄 リスト表示に切替</span>
+            </button>
+
+            <div class="text-center pt-3 pb-1">
+              <span class="text-[10px] font-mono text-zinc-400 uppercase tracking-widest">TAP CARD TO UNFOLD</span>
+            </div>
+
+            <div class="stack-container">
+              ${posts.slice(0, 5).map((post, idx) => {
+                // 新聞風の重ね合わせオフセット（重なりと微妙な回転傾き）
+                const offsets = [
+                  { top: 10, rot: -2, z: 50 },
+                  { top: 55, rot: 3, z: 40 },
+                  { top: 100, rot: -4, z: 30 },
+                  { top: 145, rot: 2, z: 20 },
+                  { top: 190, rot: -3, z: 10 }
+                ];
+                const off = offsets[idx % offsets.length];
+
+                return `
+                  <div
+                    id="stack-card-${post.id}"
+                    data-postid="${post.id}"
+                    data-idx="${idx}"
+                    class="newspaper-stack-card stack-post-card"
+                    style="top: ${off.top}px; transform: rotate(${off.rot}deg); z-index: ${off.z};"
+                  >
+                    <!-- 新聞ヘッダー風デザイン -->
+                    <div class="flex justify-between items-center pb-2 border-b border-zinc-200 mb-3 text-[10px] font-serif font-bold text-zinc-500">
+                      <span class="uppercase tracking-wider">DAILY OTAKIAGE SHIMBUN</span>
+                      <span class="font-mono text-zinc-400">${post.dateStr}</span>
                     </div>
-                    <span class="text-zinc-400 font-mono text-[10px] flex-shrink-0">${post.dateStr}</span>
-                  </div>
 
-                  <p class="text-xs text-black leading-relaxed font-medium mb-2.5 break-words">
-                    ${post.text}
-                  </p>
+                    <div class="flex gap-3 items-start">
+                      <div class="w-10 h-10 bg-white flex items-center justify-center flex-shrink-0">
+                        <canvas id="card-canvas-${post.id}" class="block"></canvas>
+                      </div>
 
-                  <div class="text-[11px] text-paper-accent font-bold mb-3">
-                    ${post.tag}
-                  </div>
+                      <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-1.5 mb-1">
+                          <span class="font-bold text-black text-xs truncate">${post.userName}</span>
+                          <span class="text-zinc-400 font-mono text-[10px] truncate">${post.userId}</span>
+                        </div>
 
-                  <div class="flex items-center justify-between text-zinc-500 text-xs max-w-xs pt-1">
-                    <div class="flex items-center gap-1.5 hover:text-black transition-colors">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
-                      </svg>
-                      <span class="text-[11px] font-mono">${post.replies ? post.replies.length : 0}</span>
+                        <p class="text-xs text-black font-serif leading-relaxed font-bold line-clamp-3 mb-2">
+                          ${post.text}
+                        </p>
+
+                        <div class="flex justify-between items-center text-[10px] font-bold text-zinc-400 pt-1 border-t border-zinc-100">
+                          <span class="text-paper-accent font-sans">${post.tag}</span>
+                          <div class="flex items-center gap-3">
+                            <span>💬 ${post.replies ? post.replies.length : 0}</span>
+                            <span class="text-amber-600">🔥 ${post.gasshoCount}</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-
-                    <button data-postid="${post.id}" class="btn-gassho flex items-center gap-1.5 hover:text-amber-600 transition-colors">
-                      <svg class="w-4 h-4 text-black hover:text-amber-600 transition-colors" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 23c-4.97 0-9-3.58-9-8 0-3.9 2.5-6.8 5.5-9.5C9.5 4.5 11 3 12 1c1 2 2.5 3.5 3.5 4.5 3 2.7 5.5 5.6 5.5 9.5 0 4.42-4.03 8-9 8zm0-18c-1.5 2-3 3.5-4.5 5-2.2 2.2-3.5 4.2-3.5 7 0 3.3 2.7 6 6 6s6-2.7 6-6c0-2.8-1.3-4.8-3.5-7-1.5-1.5-3-3-4.5-5z"/>
-                      </svg>
-                      <span id="gassho-count-${post.id}" class="text-[11px] font-bold text-black">${post.gasshoCount}</span>
-                    </button>
                   </div>
-                </div>
-              </div>
-            `).join('')}
+                `;
+              }).join('')}
+            </div>
           </div>
-        </div>
-      `;
+        `;
+      } else {
+        // 従来リスト表示
+        return `
+          <div class="flex-1 flex flex-col fade-in bg-white min-h-screen">
+            <div class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-paper-border px-4 py-2 flex justify-between items-center">
+              <span class="text-xs font-bold text-zinc-500">タイムライン一覧</span>
+              <button id="btn-toggle-viewmode" class="text-xs font-bold text-black border border-zinc-300 px-3 py-1 rounded-full">
+                📚 スタック表示に切替
+              </button>
+            </div>
+
+            <div class="divide-y divide-paper-border">
+              ${posts.map((post) => `
+                <div data-postid="${post.id}" class="x-post-card post-item-card flex gap-3">
+                  <div class="flex-shrink-0">
+                    <div class="w-11 h-11 bg-white flex items-center justify-center">
+                      <canvas id="card-canvas-${post.id}" class="block"></canvas>
+                    </div>
+                  </div>
+
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between text-xs mb-1">
+                      <div class="flex items-center gap-1.5 truncate">
+                        <span class="font-bold text-black truncate">${post.userName}</span>
+                        <span class="text-zinc-500 font-mono text-[11px] truncate">${post.userId}</span>
+                      </div>
+                      <span class="text-zinc-400 font-mono text-[10px] flex-shrink-0">${post.dateStr}</span>
+                    </div>
+
+                    <p class="text-xs text-black leading-relaxed font-medium mb-2.5 break-words">
+                      ${post.text}
+                    </p>
+
+                    <div class="text-[11px] text-paper-accent font-bold mb-3">
+                      ${post.tag}
+                    </div>
+
+                    <div class="flex items-center justify-between text-zinc-500 text-xs max-w-xs pt-1">
+                      <div class="flex items-center gap-1.5 hover:text-black transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                        </svg>
+                        <span class="text-[11px] font-mono">${post.replies ? post.replies.length : 0}</span>
+                      </div>
+
+                      <button data-postid="${post.id}" class="btn-gassho flex items-center gap-1.5 hover:text-amber-600 transition-colors">
+                        <svg class="w-4 h-4 text-black hover:text-amber-600 transition-colors" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 23c-4.97 0-9-3.58-9-8 0-3.9 2.5-6.8 5.5-9.5C9.5 4.5 11 3 12 1c1 2 2.5 3.5 3.5 4.5 3 2.7 5.5 5.6 5.5 9.5 0 4.42-4.03 8-9 8zm0-18c-1.5 2-3 3.5-4.5 5-2.2 2.2-3.5 4.2-3.5 7 0 3.3 2.7 6 6 6s6-2.7 6-6c0-2.8-1.3-4.8-3.5-7-1.5-1.5-3-3-4.5-5z"/>
+                        </svg>
+                        <span id="gassho-count-${post.id}" class="text-[11px] font-bold text-black">${post.gasshoCount}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
     }
 
     // --- 投稿詳細モーダル ---
@@ -1233,7 +1346,7 @@
       `;
     }
 
-    // --- 【超迫力】底辺から赤・オレンジ・黄色の炎が全画面を包み込むリアル炎上演出 ---
+    // --- 全画面メラメラ炎上トランジション ---
     function triggerFullscreenFireBurnTransition(onComplete) {
       const fireOverlay = document.getElementById('fullscreen-fire-overlay');
 
@@ -1258,12 +1371,23 @@
         modalSheet.classList.add('bottom-sheet-slide-down');
         setTimeout(() => {
           selectedPostModal = null;
+          // スタック展開時であればリセット
+          resetStackCardsPosition();
           renderApp();
         }, 220);
       } else {
         selectedPostModal = null;
+        resetStackCardsPosition();
         renderApp();
       }
+    }
+
+    // スタックカードの退避状態リセット
+    function resetStackCardsPosition() {
+      document.querySelectorAll('.newspaper-stack-card').forEach(card => {
+        card.classList.remove('slide-out-top', 'slide-out-bottom', 'expanded-center');
+      });
+      expandedCardId = null;
     }
 
     // --- イベントリスナー ---
@@ -1354,7 +1478,6 @@
         };
       });
 
-      // 🔥 お焚き上げ実行ボタン（全画面炎上トランジション）
       const executeBurnBtn = document.getElementById('btn-execute-burn');
       if (executeBurnBtn) {
         executeBurnBtn.onclick = () => {
@@ -1387,6 +1510,50 @@
         };
       }
 
+      // --- 【新機能】新聞スタックカードタップ時の物理スプリング散開＆フォーカス展開演出 ---
+      document.querySelectorAll('.stack-post-card').forEach(card => {
+        card.onclick = (e) => {
+          soundEngine.playSubtleClick();
+          const targetId = card.dataset.postid;
+          const targetIdx = parseInt(card.dataset.idx, 10);
+
+          expandedCardId = targetId;
+
+          // 物理スプリング弾力散開処理：選択されたカードより上の要素は上へ、下の要素は下へ画面外スライドアウト
+          const allCards = document.querySelectorAll('.stack-post-card');
+          allCards.forEach(c => {
+            const idx = parseInt(c.dataset.idx, 10);
+            if (idx < targetIdx) {
+              c.classList.add('slide-out-top');
+            } else if (idx > targetIdx) {
+              c.classList.add('slide-out-bottom');
+            } else {
+              c.classList.add('expanded-center');
+            }
+          });
+
+          // 0.35秒後にボトムシート（モーダル）を開く
+          setTimeout(() => {
+            const post = posts.find(p => p.id === targetId);
+            if (post) {
+              selectedPostModal = post;
+              renderApp();
+            }
+          }, 350);
+        };
+      });
+
+      // 表示モード切替
+      const toggleViewBtn = document.getElementById('btn-toggle-viewmode');
+      if (toggleViewBtn) {
+        toggleViewBtn.onclick = () => {
+          timelineViewMode = (timelineViewMode === 'stack' ? 'list' : 'stack');
+          soundEngine.playSubtleClick();
+          renderApp();
+        };
+      }
+
+      // 従来リスト表示カードクリック
       document.querySelectorAll('.post-item-card').forEach(card => {
         card.onclick = (e) => {
           if (e.target.closest('.btn-gassho')) return;
