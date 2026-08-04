@@ -112,7 +112,8 @@
       height: auto;
       z-index: 9999;
       pointer-events: none;
-      display: block;
+      display: none;
+      transition: transform 0.4s cubic-bezier(0.77, 0, 0.175, 1);
     }
 
     .app-bottom-teeth-frame {
@@ -125,7 +126,32 @@
       height: auto;
       z-index: 9999;
       pointer-events: none;
+      display: none;
+      transition: transform 0.4s cubic-bezier(0.77, 0, 0.175, 1);
+    }
+
+    /* タイトル画面のみ牙フレームを表示 */
+    body.is-intro .app-top-teeth-frame,
+    body.is-intro .app-bottom-teeth-frame {
       display: block;
+    }
+
+    /* 牙がガツンと噛み合うアグレッシブなアニメーション */
+    .app-top-teeth-frame.bite-snap {
+      transform: translateX(-50%) translateY(45%);
+    }
+
+    .app-bottom-teeth-frame.bite-snap {
+      transform: translateX(-50%) translateY(-45%);
+    }
+
+    /* 噛み合った後にガバッと上下に開いて画面外へ全開逃走 */
+    .app-top-teeth-frame.open-wide {
+      transform: translateX(-50%) translateY(-120%);
+    }
+
+    .app-bottom-teeth-frame.open-wide {
+      transform: translateX(-50%) translateY(120%);
     }
 
     /* 全画面ジャストフィット用コンテナ */
@@ -134,21 +160,21 @@
       flex-direction: column;
       justify-content: space-between;
       height: 100dvh;
-      padding-top: max(5.0rem, calc(env(safe-area-inset-top) + 4.0rem));
-      padding-bottom: max(5.5rem, calc(env(safe-area-inset-bottom) + 4.5rem));
+      padding-top: max(4.0rem, calc(env(safe-area-inset-top) + 3.0rem));
+      padding-bottom: max(4.5rem, calc(env(safe-area-inset-bottom) + 3.5rem));
       padding-left: 1.25rem;
       padding-right: 1.25rem;
       overflow: hidden;
     }
 
-    /* ポスタータイトルの縦列ピタリ整列 ＆ 極限まで詰めた行間・字間 */
+    /* ポスタータイトルの縦列ピタリ整列 ＆ さらに半分詰めた超密着行間・字間（💥タイム基準） */
     .poster-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      row-gap: 0px;
-      column-gap: 0px;
+      row-gap: -8px;
+      column-gap: -4px;
       width: 100%;
-      max-width: 280px;
+      max-width: 250px;
       margin: 0 auto;
     }
 
@@ -156,7 +182,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      aspect-ratio: 1;
+      height: 48px;
     }
 
     .poster-char {
@@ -906,6 +932,12 @@
 
       const t = i18n[currentLang];
 
+      if (currentStep === 'intro') {
+        document.body.classList.add('is-intro');
+      } else {
+        document.body.classList.remove('is-intro');
+      }
+
       if (currentStep === 'chaos_gallery') {
         document.body.classList.remove('no-scroll');
       } else {
@@ -1454,10 +1486,38 @@
       if (startBtn) {
         startBtn.onclick = () => {
           soundEngine.playSubtleClick();
-          initCameraCapture(() => {
-            currentStep = 'vibe_check';
-            renderApp();
-          });
+
+          const topTeeth = document.querySelector('.app-top-teeth-frame');
+          const bottomTeeth = document.querySelector('.app-bottom-teeth-frame');
+
+          if (topTeeth && bottomTeeth) {
+            // 1. 上下の歯がガツンと力強く噛み合う！
+            topTeeth.classList.add('bite-snap');
+            bottomTeeth.classList.add('bite-snap');
+
+            setTimeout(() => {
+              // 2. 口がガバッと大きく開いて上下の画面外へ一気に移動（退場）！
+              topTeeth.classList.remove('bite-snap');
+              bottomTeeth.classList.remove('bite-snap');
+              topTeeth.classList.add('open-wide');
+              bottomTeeth.classList.add('open-wide');
+
+              setTimeout(() => {
+                // 3. 画面外に完全に消え去ったタイミングで次の画面（感情設定）へ遷移
+                topTeeth.classList.remove('open-wide');
+                bottomTeeth.classList.remove('open-wide');
+                initCameraCapture(() => {
+                  currentStep = 'vibe_check';
+                  renderApp();
+                });
+              }, 400);
+            }, 450);
+          } else {
+            initCameraCapture(() => {
+              currentStep = 'vibe_check';
+              renderApp();
+            });
+          }
         };
       }
 
