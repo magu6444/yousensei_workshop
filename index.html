@@ -942,29 +942,13 @@
           canvas._threeTexture.needsUpdate = true;
         }
 
-        // 3D 頂点の動的ディスプレイスメント（添付写真の棘鉄球のような「ツンと尖って引っ張られるトゲトゲ変形」）
-        const geo = canvas._threeGeo;
-        const posAttr = geo.attributes.position;
-        const posArray = posAttr.array;
-        const initPos = canvas._threeInitialPos;
-
-        // 5つのパラメータ方向（いらいら、理不尽、虚無、嫉妬、悲しい）の3D基準単位ベクトル
-        const angles5 = [
-          -Math.PI / 2,
-          -Math.PI / 2 + (Math.PI * 2 / 5),
-          -Math.PI / 2 + (Math.PI * 4 / 5),
-          -Math.PI / 2 + (Math.PI * 6 / 5),
-          -Math.PI / 2 + (Math.PI * 8 / 5)
-        ];
-
-        // iPhoneタッチ操作に特化した変形（奥行きZ軸の歪み・トゲを出さず、手前X/Y平面上でピンポイントに引き伸ばし・へこませ）
+        // iPhoneタッチ操作に特化した変形（手前X/Y平面上でピンポイントに引き伸ばし・へこませ）
         // 初期状態（デフォルト）は添付写真1枚通りの綺麗で完全な「まんまる3D球体」
         const geo = canvas._threeGeo;
         const posAttr = geo.attributes.position;
         const posArray = posAttr.array;
         const initPos = canvas._threeInitialPos;
 
-        // 5つのパラメータ方向（いらいら、理不尽、虚無、嫉妬、悲しい）のスクリーン2D角度
         const angles5 = [
           -Math.PI / 2,
           -Math.PI / 2 + (Math.PI * 2 / 5),
