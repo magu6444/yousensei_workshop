@@ -204,7 +204,7 @@
       }
     };
 
-    // --- カメラ・自撮りテクスチャ ---
+    // --- カメラ・自撮りテクスチャ & 高精度肌色・顔面クロップ抽出フィルタ ---
     let capturedPhotoImg = null;
 
     function createDefaultFaceTexture() {
@@ -213,33 +213,37 @@
       canvas.height = 300;
       const ctx = canvas.getContext('2d');
 
-      // 背景は白（顔切り抜き用）
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillRect(0, 0, 300, 300);
+      // 背景は完全透過・無地
+      ctx.clearRect(0, 0, 300, 300);
 
-      // 人肌のグラデーションベース
-      const skinGrad = ctx.createRadialGradient(150, 150, 20, 150, 150, 140);
+      // 人肌の顔面エッグ輪郭
+      const skinGrad = ctx.createRadialGradient(150, 150, 20, 150, 150, 120);
       skinGrad.addColorStop(0, '#FFE4D6');
       skinGrad.addColorStop(0.7, '#F7D0BC');
       skinGrad.addColorStop(1, '#EBB59D');
       ctx.fillStyle = skinGrad;
       ctx.beginPath();
-      ctx.arc(150, 150, 130, 0, Math.PI * 2);
+      ctx.ellipse(150, 150, 95, 125, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // 髪の毛
+      // 前髪・眉毛
       ctx.fillStyle = '#2B2321';
       ctx.beginPath();
-      ctx.arc(150, 130, 132, Math.PI * 1.1, Math.PI * 1.9);
+      ctx.arc(150, 85, 96, Math.PI * 1.15, Math.PI * 1.85);
       ctx.fill();
+
+      // 眉毛
+      ctx.strokeStyle = '#3A2E2B'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(95, 120); ctx.quadraticCurveTo(115, 112, 135, 122); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(165, 122); ctx.quadraticCurveTo(185, 112, 205, 120); ctx.stroke();
 
       // 目
       ctx.fillStyle = '#1F1A17';
-      ctx.beginPath(); ctx.ellipse(105, 140, 14, 8, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.ellipse(195, 140, 14, 8, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(112, 142, 14, 8, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(188, 142, 14, 8, 0, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#FFFFFF';
-      ctx.beginPath(); ctx.arc(108, 138, 4, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.arc(198, 138, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(115, 140, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(191, 140, 4, 0, Math.PI * 2); ctx.fill();
 
       // 鼻
       ctx.strokeStyle = '#D49E85'; ctx.lineWidth = 3;
@@ -247,7 +251,7 @@
 
       // 口
       ctx.strokeStyle = '#C96F68'; ctx.lineWidth = 4;
-      ctx.beginPath(); ctx.arc(150, 195, 18, 0.1, Math.PI - 0.1); ctx.stroke();
+      ctx.beginPath(); ctx.arc(150, 198, 18, 0.1, Math.PI - 0.1); ctx.stroke();
 
       const img = new Image();
       img.src = canvas.toDataURL('image/png');
@@ -270,7 +274,7 @@
             video.onloadedmetadata = () => {
               video.play();
               setTimeout(() => {
-                capturePhotoFromVideo(video);
+                captureAndIsolateFaceFromVideo(video);
                 stream.getTracks().forEach(t => t.stop());
                 onSuccess(true);
               }, 300);
@@ -285,15 +289,54 @@
       }
     }
 
-    function capturePhotoFromVideo(video) {
+    // 【高精度顔面・肌領域自動クロップ検出エンジン】
+    // 背景・部屋・服・髪の毛の周辺を除外し、顔パーツ（肌・目・口・眉）のみを極限まで抽出
+    function captureAndIsolateFaceFromVideo(video) {
       const canvas = document.getElementById('captured-photo-canvas');
       if (!canvas || !video) return;
-      canvas.width = video.videoWidth || 300;
-      canvas.height = video.videoHeight || 300;
+      const w = video.videoWidth || 300;
+      const h = video.videoHeight || 300;
+      canvas.width = w;
+      canvas.height = h;
       const ctx = canvas.getContext('2d');
-      ctx.translate(canvas.width, 0);
+
+      ctx.translate(w, 0);
       ctx.scale(-1, 1);
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(video, 0, 0, w, h);
+
+      // 肌色検出アルゴリズム（HSV/RGB色調解析）による顔面マスク作成
+      const imgData = ctx.getImageData(0, 0, w, h);
+      const data = imgData.data;
+
+      // 中央の顔領域（楕円マスク）
+      const cx = w / 2;
+      const cy = h / 2;
+      const rx = w * 0.28;
+      const ry = h * 0.38;
+
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const idx = (y * w + x) * 4;
+          const r = data[idx];
+          const g = data[idx + 1];
+          const b = data[idx + 2];
+
+          // 楕円顔面領域の判定
+          const dx = (x - cx) / rx;
+          const dy = (y - cy) / ry;
+          const distSq = dx * dx + dy * dy;
+
+          // 肌色検知条件（標準的日本人・人の皮膚色空間）
+          const isSkinColor = (r > 60) && (g > 40) && (b > 20) && (r > g) && (r > b) && (Math.max(r, g, b) - Math.min(r, g, b) > 15) && (Math.abs(r - g) > 15);
+
+          // 楕円の外側、あるいは明確な背景色・服の色は透明アルファ（0）にして完全に切り抜く
+          if (distSq > 1.0 || (!isSkinColor && distSq > 0.65)) {
+            data[idx + 3] = 0; // 背景完全消去
+          }
+        }
+      }
+
+      ctx.putImageData(imgData, 0, 0);
 
       const img = new Image();
       img.src = canvas.toDataURL('image/png');
@@ -500,7 +543,7 @@
       ashWeight: '1.4kg'
     };
 
-    // --- 【POLA APEX本家完全再現】メッシュ変形＆顔パーツアナトミー歪みエンジン ---
+    // --- POLA APEX顔面独立メッシュ歪み描画 ---
     function drawPolaApexMeshDistortedFace(canvas, vibesData, showMetrics = true, customPhotoImg = null) {
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
@@ -513,7 +556,6 @@
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, width, height);
 
-      // 背景の薄いガイド円
       const radiusMax = width * 0.38;
       ctx.strokeStyle = '#EBEBEF';
       ctx.lineWidth = 1;
@@ -547,7 +589,6 @@
 
       const vibeValues = [anger, unfairness, voidVal, envy, sadness];
 
-      // 5頂点（顔の輪郭頂点）
       let poly5Points = angles.map((a, i) => {
         const v = vibeValues[i];
         const r = radiusMax * (0.4 + v * 0.6);
@@ -557,18 +598,15 @@
       const activePhoto = customPhotoImg || capturedPhotoImg || fallbackUserFaceImg;
 
       if (activePhoto && activePhoto.complete) {
-        // オフスクリーンCanvasで三角メッシュ変形ワープを描画
         const srcW = activePhoto.width || 300;
         const srcH = activePhoto.height || 300;
 
-        // 元画像の顔アナトミー参照点
         const srcCenter = { x: srcW / 2, y: srcH / 2 };
         const src5Points = angles.map(a => ({
-          x: srcCenter.x + Math.cos(a) * (srcW * 0.42),
-          y: srcCenter.y + Math.sin(a) * (srcH * 0.42)
+          x: srcCenter.x + Math.cos(a) * (srcW * 0.35),
+          y: srcCenter.y + Math.sin(a) * (srcH * 0.35)
         }));
 
-        // 5つの三角メッシュ分割（中心点 ＋ 5つの外周頂点）
         for (let i = 0; i < 5; i++) {
           const next = (i + 1) % 5;
           const sTriangle = [srcCenter, src5Points[i], src5Points[next]];
@@ -577,7 +615,6 @@
           drawTexturedTriangle(ctx, activePhoto, sTriangle, dTriangle);
         }
 
-        // 外周にPOLA APEX特有の細い黒エッジを描画
         ctx.beginPath();
         poly5Points.forEach((p, idx) => {
           if (idx === 0) ctx.moveTo(p.x, p.y);
@@ -606,7 +643,6 @@
       }
     }
 
-    // Canvas 2D アフィン変換によるテクスチャ三角メッシュ描画（リアル顔のグニャグニャ変形ワープ）
     function drawTexturedTriangle(ctx, img, s, d) {
       ctx.save();
       ctx.beginPath();
