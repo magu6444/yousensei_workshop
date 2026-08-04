@@ -965,36 +965,60 @@
           canvas._threeTexture.needsUpdate = true;
         }
 
-        // 3D 頂点の動的ディスプレイスメント（パラメータ連動トゲトゲ・パンク・膨張変形）
+        // 3D 頂点の動的ディスプレイスメント（添付写真の棘鉄球のような「ツンと尖って引っ張られるトゲトゲ変形」）
         const geo = canvas._threeGeo;
         const posAttr = geo.attributes.position;
         const posArray = posAttr.array;
         const initPos = canvas._threeInitialPos;
+
+        // 5つのパラメータ方向（いらいら、理不尽、虚無、嫉妬、悲しい）の3D基準単位ベクトル
+        const angles5 = [
+          -Math.PI / 2,
+          -Math.PI / 2 + (Math.PI * 2 / 5),
+          -Math.PI / 2 + (Math.PI * 4 / 5),
+          -Math.PI / 2 + (Math.PI * 6 / 5),
+          -Math.PI / 2 + (Math.PI * 8 / 5)
+        ];
 
         for (let i = 0; i < posArray.length; i += 3) {
           const x = initPos[i];
           const y = initPos[i + 1];
           const z = initPos[i + 2];
 
-          // 3D 頂点の極座標角度を計算
-          const angleXY = Math.atan2(y, x);
+          // 頂点までの距離と方向
+          const len = Math.sqrt(x * x + y * y + z * z);
+          if (len < 0.0001) continue;
 
-          let angleIdx = ((angleXY + Math.PI / 2) / (Math.PI * 2 / 5)) % 5;
-          if (angleIdx < 0) angleIdx += 5;
-          const baseI = Math.floor(angleIdx);
-          const nextI = (baseI + 1) % 5;
-          const ratio = angleIdx - baseI;
-          const interpolatedVibe = vibeValues[baseI] * (1 - ratio) + vibeValues[nextI] * ratio;
+          const vx = x / len;
+          const vy = y / len;
+          const angleXY = Math.atan2(vy, vx);
 
-          // トゲトゲ（パンク）スパイク効果 ＆ 3D 膨張バルーン変形
-          const angleDiff = Math.abs(ratio - 0.5);
-          const spikeFactor = Math.pow(1 - angleDiff * 2, 2.5) * ((interpolatedVibe - 0.5) * 0.95);
-          const deformScale = 1.0 + (interpolatedVibe - 0.5) * 0.75 + spikeFactor;
+          // 5つの各パラメータの方向に対する鋭利な「スパイク（ツンと引っ張られるトゲ）」の計算
+          let totalSpikeOffset = 0;
 
-          // Z軸（奥行き）も立体的に盛り上がる 3D ディスプレイスメント
-          posArray[i] = x * deformScale;
-          posArray[i + 1] = y * deformScale;
-          posArray[i + 2] = z * (deformScale > 1.0 ? 1.0 + (deformScale - 1.0) * 0.5 : deformScale);
+          angles5.forEach((targetAngle, idx) => {
+            const vVal = vibeValues[idx]; // 0.1 ~ 1.0 (デフォルト 0.5)
+            const intensity = (vVal - 0.5) * 2; // -0.8 ~ +1.0
+
+            if (intensity > 0.05) {
+              // パラメータ方向との角度差
+              let diff = Math.abs(angleXY - targetAngle);
+              if (diff > Math.PI) diff = Math.PI * 2 - diff;
+
+              // 鋭利な円錐状スパイク（棘鉄球のようにピンポイントでツンと尖って伸びる）
+              const coneWidth = 0.55; // トゲの根元の広さ
+              if (diff < coneWidth) {
+                const sharpness = Math.pow(1.0 - diff / coneWidth, 3.0);
+                totalSpikeOffset += intensity * sharpness * 0.9;
+              }
+            }
+          });
+
+          // 3D空間全方向（X, Y, Z）に一律でツンと突き出すスパイク変形
+          const finalScale = 1.0 + totalSpikeOffset;
+          posArray[i] = x * finalScale;
+          posArray[i + 1] = y * finalScale;
+          posArray[i + 2] = z * finalScale;
         }
 
         posAttr.needsUpdate = true;
