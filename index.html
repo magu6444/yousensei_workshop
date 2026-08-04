@@ -57,17 +57,50 @@
       touch-action: none;
     }
 
+    /* アプリ全体を覆う巨大口元（上唇・下唇）背景透過フレーム */
+    .mouth-frame-top {
+      position: fixed;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 480px;
+      height: 22vh;
+      z-index: 40;
+      pointer-events: none;
+      background-size: 100% auto;
+      background-position: top center;
+      background-repeat: no-repeat;
+    }
+
+    .mouth-frame-bottom {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 480px;
+      height: 22vh;
+      z-index: 40;
+      pointer-events: none;
+      background-size: 100% auto;
+      background-position: bottom center;
+      background-repeat: no-repeat;
+    }
+
     /* 全画面ジャストフィット用コンテナ */
     .screen-container {
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       height: 100dvh;
-      padding-top: max(1rem, env(safe-area-inset-top));
+      padding-top: max(1.2rem, env(safe-area-inset-top));
       padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
       padding-left: 1.25rem;
       padding-right: 1.25rem;
       overflow: hidden;
+      position: relative;
+      z-index: 10;
     }
 
     /* ポスタータイトルの縦列ピタリ整列 ＆ ゆったり行間スペース */
@@ -222,6 +255,10 @@
 </head>
 <body class="bg-white text-paper-dark min-h-screen flex flex-col antialiased">
 
+  <!-- 画面最上部＆最下部に常駐固定される口元（八重歯・リップ）背景透過巨大フレーム -->
+  <div id="mouth-frame-top-elem" class="mouth-frame-top"></div>
+  <div id="mouth-frame-bottom-elem" class="mouth-frame-bottom"></div>
+
   <!-- 画面上部ダイナミックアイランド -->
   <div id="dynamic-island-notch">
     <span id="island-status-text">🔥 焚き上げ中...</span>
@@ -270,43 +307,55 @@
       }
     };
 
-    // --- ユーザー提供の口元・八重歯・リップフレーム画像（背景透過処理を自動実行） ---
-    let mouthFrameImg = null;
-
-    function initMouthFrameImage() {
+    // --- 【背景透過口元フレーム分割処理】 ---
+    // 上唇（八重歯つき）と下唇を切り分け、画面の上下最前面に固定配置
+    function initGlobalMouthFrame() {
       const rawImg = new Image();
       rawImg.src = 'images/mouth_frame_raw.png';
       rawImg.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = rawImg.width;
-        canvas.height = rawImg.height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(rawImg, 0, 0);
+        const w = rawImg.width;
+        const h = rawImg.height;
 
-        // 白背景（RGB > 220）を自動的に背景透過（アルファ=0）に変換
-        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        // 全体Canvasで背景透過処理（RGB>220 -> alpha 0）
+        const fullCanvas = document.createElement('canvas');
+        fullCanvas.width = w;
+        fullCanvas.height = h;
+        const fullCtx = fullCanvas.getContext('2d');
+        fullCtx.drawImage(rawImg, 0, 0);
+
+        const imgData = fullCtx.getImageData(0, 0, w, h);
         const data = imgData.data;
         for (let i = 0; i < data.length; i += 4) {
           const r = data[i], g = data[i+1], b = data[i+2];
           if (r > 220 && g > 220 && b > 220) {
-            data[i+3] = 0; // 完全透明
+            data[i+3] = 0;
           }
         }
-        ctx.putImageData(imgData, 0, 0);
+        fullCtx.putImageData(imgData, 0, 0);
 
-        const transparentImg = new Image();
-        transparentImg.src = canvas.toDataURL('image/png');
-        transparentImg.onload = () => {
-          mouthFrameImg = transparentImg;
-          // 再描画
-          if (currentStep === 'vibe_check') {
-            const faceCanvas = document.getElementById('vibe-face-canvas');
-            if (faceCanvas) drawPolaApexMeshDistortedFace(faceCanvas, vibes, true, capturedPhotoImg || fallbackUserFaceImg);
-          }
-        };
+        // 1. 上唇（八重歯つき）切り出し Canvas
+        const topCanvas = document.createElement('canvas');
+        topCanvas.width = w;
+        topCanvas.height = Math.floor(h * 0.35);
+        const topCtx = topCanvas.getContext('2d');
+        topCtx.drawImage(fullCanvas, 0, 0, w, topCanvas.height, 0, 0, w, topCanvas.height);
+
+        // 2. 下唇切り出し Canvas
+        const bottomCanvas = document.createElement('canvas');
+        bottomCanvas.width = w;
+        bottomCanvas.height = Math.floor(h * 0.35);
+        const bottomCtx = bottomCanvas.getContext('2d');
+        bottomCtx.drawImage(fullCanvas, 0, h - bottomCanvas.height, w, bottomCanvas.height, 0, 0, w, bottomCanvas.height);
+
+        // CSS背景画像としてセット
+        const topElem = document.getElementById('mouth-frame-top-elem');
+        const bottomElem = document.getElementById('mouth-frame-bottom-elem');
+
+        if (topElem) topElem.style.backgroundImage = `url(${topCanvas.toDataURL('image/png')})`;
+        if (bottomElem) bottomElem.style.backgroundImage = `url(${bottomCanvas.toDataURL('image/png')})`;
       };
     }
-    initMouthFrameImage();
+    initGlobalMouthFrame();
 
     // --- カメラ・自撮りテクスチャ ＆ 顔面ドアップ・5角形モザイク切り抜きプロセス ---
     let capturedPhotoImg = null;
@@ -641,7 +690,7 @@
       ashWeight: '1.4kg'
     };
 
-    // --- POLA APEXメッシュ変形描画 ＋ ユーザー提供口元リップフレーム重ね描画 ---
+    // --- POLA APEXメッシュ変形描画 ---
     function drawPolaApexMeshDistortedFace(canvas, vibesData, showMetrics = true, customPhotoImg = null) {
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
@@ -699,16 +748,7 @@
         }
       }
 
-      // 2. 「ユーザー提供口元・八重歯リップフレーム」をプラットフォームのフレーム枠として最前面に重ね描画
-      if (mouthFrameImg && mouthFrameImg.complete && showMetrics) {
-        ctx.save();
-        const frameW = width * 1.15;
-        const frameH = height * 1.15;
-        ctx.drawImage(mouthFrameImg, cx - frameW / 2, cy - frameH / 2 + 5, frameW, frameH);
-        ctx.restore();
-      }
-
-      // 3. 同心5角形ガイド線
+      // 2. 同心5角形ガイド線
       ctx.strokeStyle = '#EBEBEF';
       ctx.lineWidth = 1;
       [0.25, 0.5, 0.75, 1.0].forEach(rScale => {
@@ -793,10 +833,18 @@
 
       const t = i18n[currentLang];
 
+      const topElem = document.getElementById('mouth-frame-top-elem');
+      const bottomElem = document.getElementById('mouth-frame-bottom-elem');
+
+      // タイムライン画面（chaos_gallery）以外は口元巨大フレームを表示
       if (currentStep === 'chaos_gallery') {
         document.body.classList.remove('no-scroll');
+        if (topElem) topElem.style.display = 'none';
+        if (bottomElem) bottomElem.style.display = 'none';
       } else {
         document.body.classList.add('no-scroll');
+        if (topElem) topElem.style.display = 'block';
+        if (bottomElem) bottomElem.style.display = 'block';
       }
 
       if (currentStep === 'intro') {
