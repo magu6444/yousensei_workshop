@@ -1818,8 +1818,7 @@
       if (toBurnBtn) {
         toBurnBtn.onclick = () => {
           soundEngine.playSubtleClick();
-          // 今どんな気分？→顔登録ページへ
-          currentStep = 'profile';
+          currentStep = 'solo_burn';
           renderApp();
         };
       }
@@ -2010,12 +2009,7 @@
 
       const navProfile = document.getElementById('nav-profile');
       if (navProfile) {
-        navProfile.onclick = () => {
-          soundEngine.playSubtleClick();
-          // マイページ → まず今どんな気分？ → 顔を登録
-          currentStep = 'vibe_check';
-          renderApp();
-        };
+        navProfile.onclick = () => { currentStep = 'profile'; soundEngine.playSubtleClick(); renderApp(); };
       }
 
       document.querySelectorAll('.btn-gassho').forEach(btn => {
