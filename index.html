@@ -1289,7 +1289,7 @@
       `;
     }
 
-    // --- 本格リアル火炎物理シミュレーション ---
+    // --- 本格🔥絵文字の全画面ダイナミック火炎物理シミュレーション ---
     function triggerRealFireBurnSimulation(onComplete) {
       const canvas = document.getElementById('real-fire-canvas');
       if (!canvas) {
@@ -1305,18 +1305,20 @@
       canvas.classList.add('active');
 
       let particles = [];
-      const particleCount = 180;
+      const particleCount = 75; // 多彩なサイズの🔥絵文字を配置
 
       for (let i = 0; i < particleCount; i++) {
         particles.push({
           x: Math.random() * canvas.width,
-          y: canvas.height + Math.random() * 100,
-          vx: (Math.random() - 0.5) * 3,
-          vy: -(Math.random() * 8 + 6),
-          size: Math.random() * 30 + 15,
-          life: Math.random() * 0.8 + 0.5,
-          maxLife: 1.2,
-          hue: Math.random() * 40
+          y: canvas.height + Math.random() * 120,
+          vx: (Math.random() - 0.5) * 4,
+          vy: -(Math.random() * 12 + 8),
+          size: Math.floor(Math.random() * 45 + 20), // 20px〜65pxのランダムサイズ
+          rotation: (Math.random() - 0.5) * 0.4,
+          rotSpeed: (Math.random() - 0.5) * 0.05,
+          opacity: Math.random() * 0.5 + 0.5,
+          swayFreq: Math.random() * 0.01 + 0.005,
+          swayAmp: Math.random() * 3 + 1
         });
       }
 
@@ -1327,33 +1329,29 @@
         const elapsed = (now - startTime) / 1000;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+        // 背景の半透明暗転
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         particles.forEach(p => {
-          p.x += p.vx + Math.sin(now * 0.005 + p.y * 0.01) * 1.5;
+          p.x += p.vx + Math.sin(now * p.swayFreq + p.y * 0.01) * p.swayAmp;
           p.y += p.vy;
-          p.size *= 0.97;
-          p.life -= 0.015;
+          p.rotation += p.rotSpeed;
 
-          if (p.life > 0 && p.size > 1) {
+          if (p.y > -100) {
             ctx.save();
-            ctx.globalCompositeOperation = 'lighter';
-
-            const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size);
-            grad.addColorStop(0, `hsla(${p.hue}, 100%, 75%, ${p.life})`);
-            grad.addColorStop(0.4, `hsla(${p.hue - 15}, 100%, 50%, ${p.life * 0.8})`);
-            grad.addColorStop(1, `rgba(255, 0, 0, 0)`);
-
-            ctx.fillStyle = grad;
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.globalAlpha = Math.max(0, Math.min(1, p.opacity));
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rotation);
+            ctx.font = `${p.size}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('🔥', 0, 0);
             ctx.restore();
           }
         });
 
-        if (elapsed < 1.3) {
+        if (elapsed < 1.4) {
           animId = requestAnimationFrame(loop);
         }
       }
