@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="ja" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ENJO / OTAKIAGE - アバンギャルド感情解脱プラットフォーム</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,500;0,700;1,700&family=DotGothic16&family=Noto+Sans+JP:wght@400;700;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              pink: '#FF2A85',
+              neon: '#CCFF00',
+              cyan: '#00FFFF',
+              dark: '#08080A',
+              card: '#121216',
+            }
+          },
+          fontFamily: {
+            sans: ['"Noto Sans JP"', 'sans-serif'],
+            mono: ['"Space Grotesk"', '"DotGothic16"', 'monospace'],
+            display: ['"Chakra Petch"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #08080A;
+      color: #F3F4F6;
+      overflow-x: hidden;
+      user-select: none;
+    }
+
+    .bg-noise {
+      background-image: radial-gradient(rgba(255, 42, 133, 0.15) 1px, transparent 0);
+      background-size: 16px 16px;
+    }
+
+    @keyframes marquee {
+      0% { transform: translateX(0%); }
+      100% { transform: translateX(-50%); }
+    }
+    .animate-marquee {
+      display: inline-flex;
+      white-space: nowrap;
+      animation: marquee 18s linear infinite;
+    }
+
+    @keyframes burnRumble {
+      0% { transform: scale(1) rotate(0deg); }
+      25% { transform: scale(1.02) rotate(-1deg); }
+      50% { transform: scale(0.98) rotate(1deg); }
+      75% { transform: scale(1.03) rotate(-0.5deg); }
+      100% { transform: scale(1) rotate(0deg); }
+    }
+    .burning-card {
+      animation: burnRumble 0.15s infinite;
+    }
+  </style>
+</head>
+<body class="bg-brand-dark text-white font-sans min-h-screen flex flex-col antialiased selection:bg-brand-pink selection:text-black">
+
+  <div id="app-root" class="flex-1 flex flex-col min-h-screen bg-noise relative"></div>
+
+  <script>
+    // --- Web Audio API サウンド合成エンジン ---
+    const soundEngine = {
+      audioCtx: null,
+      getCtx() {
+        if (!this.audioCtx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) this.audioCtx = new AudioCtx();
+        }
+        if (this.audioCtx && this.audioCtx.state === 'suspended') {
+          this.audioCtx.resume();
+        }
+        return this.audioCtx;
+      },
+      playBurn() {
+        try {
+          const ctx = this.getCtx();
+          if (!ctx) return;
+          const bufferSize = ctx.sampleRate * 1.2;
+          const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) {
+            data[i] = Math.random() * 2 - 1;
+          }
+          const noise = ctx.createBufferSource();
+          noise.buffer = buffer;
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(800, ctx.currentTime);
+          filter.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 1.0);
+          const gain = ctx.createGain();
+          gain.gain.setValueAtTime(0.7, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.1);
+          noise.connect(filter);
+          filter.connect(gain);
+          gain.connect(ctx.destination);
+          noise.start();
+        } catch (e) { console.error(e); }
+      },
+      playGasshoBell() {
+        try {
+          const ctx = this.getCtx();
+          if (!ctx) return;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(1180, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(1170, ctx.currentTime + 2);
+          gain.gain.setValueAtTime(0.5, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 2.2);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 2.2);
+        } catch (e) { console.error(e); }
+      },
+      playGlitch() {
+        try {
+          const ctx = this.getCtx();
+          if (!ctx) return;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(200 + Math.random() * 600, ctx.currentTime);
+          gain.gain.setValueAtTime(0.12, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.08);
+        } catch (e) { console.error(e); }
+      }
+    };
+
+    // --- アプリケーションデータ状態 ---
+    let currentView = 'vibe_check'; // 'vibe_check' | 'home'
+    let activeTab = 'solo_burn'; // 'solo_burn' | 'chaos_gallery' | 'profile'
+
+    let vibes = {
+      anger: 75,
+      sadness: 30,
+      unfairness: 80,
+      envy: 45,
+      void: 60
+    };
+
+    let rantText = '';
+    let selectedTag = '#仕事';
+
+    let posts = [
+      {
+        id: 'post-1',
+        text: '休日にチャット送ってくる上司、頼むからスマホが海に沈んで一生起動しなくなってくれ。',
+        vibeCategory: 'いらいら',
+        authorVibe: { anger: 90, sadness: 20, unfairness: 85, envy: 10, void: 40 },
+        timestamp: '10分前',
+        gasshoCount: 142,
+        tag: '#職場 #老害',
+        colorStyle: 'pink'
+      },
+      {
+        id: 'post-2',
+        text: 'SNSで「匂わせ」投稿してる元カノの新しい男、まじで服装ダサすぎて安心したわ。',
+        vibeCategory: '嫉妬',
+        authorVibe: { anger: 50, sadness: 70, unfairness: 40, envy: 95, void: 30 },
+        timestamp: '25分前',
+        gasshoCount: 289,
+        tag: '#恋愛 #執着',
+        colorStyle: 'mono'
+      },
+      {
+        id: 'post-3',
+        text: '「これ簡単な仕事だからさ〜」って言ってきた営業、じゃあお前が今すぐコード書いてみろや！',
+        vibeCategory: '理不尽',
+        authorVibe: { anger: 95, sadness: 30, unfairness: 100, envy: 15, void: 20 },
+        timestamp: '1時間前',
+        gasshoCount: 512,
+        tag: '#エンジニアの叫び',
+        colorStyle: 'pink'
+      },
+      {
+        id: 'post-4',
+        text: '自分は超サバサバ系って言ってるやつほど、人の顔色見てマウント取ってくるの何？',
+        vibeCategory: '虚無',
+        authorVibe: { anger: 60, sadness: 40, unfairness: 70, envy: 30, void: 90 },
+        timestamp: '2時間前',
+        gasshoCount: 98,
+        tag: '#人間関係',
+        colorStyle: 'mono'
+      }
+    ];
+
+    let burnStats = {
+      totalBurned: 3,
+      gasshoGiven: 14,
+      ashWeight: '1.4kg'
+    };
+
+    // --- POLA APEX風 歪み顔キャンバス描画 ---
+    function drawDistortedFace(canvas, vibesData, showMetrics = true) {
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const width = canvas.width;
+      const height = canvas.height;
+      const cx = width / 2;
+      const cy = height / 2;
+
+      ctx.clearRect(0, 0, width, height);
+
+      // 背景グリッド
+      ctx.strokeStyle = '#1a1a24';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < width; i += 20) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, height); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(width, i); ctx.stroke();
+      }
+
+      // レーダーチャート同心円
+      ctx.strokeStyle = '#2d2d3f';
+      ctx.setLineDash([3, 3]);
+      [0.25, 0.5, 0.75, 1.0].forEach(r => {
+        ctx.beginPath();
+        ctx.arc(cx, cy, (width * 0.38) * r, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+      ctx.setLineDash([]);
+
+      const anger = (vibesData.anger || 50) / 100;
+      const sadness = (vibesData.sadness || 50) / 100;
+      const unfairness = (vibesData.unfairness || 50) / 100;
+      const envy = (vibesData.envy || 50) / 100;
+      const voidVal = (vibesData.void || 50) / 100;
+
+      const headSkewX = (unfairness - 0.5) * (width * 0.2);
+      const headStretchY = (anger * 35) - (sadness * 25);
+      const eyeDroop = sadness * 18;
+      const eyeStretchX = envy * 22;
+      const mouthContort = (anger * 22) - (voidVal * 16);
+
+      ctx.save();
+      ctx.translate(cx + headSkewX, cy);
+
+      // 輪郭
+      ctx.beginPath();
+      const headR = width * 0.28;
+      ctx.fillStyle = '#EBE7E0';
+      ctx.strokeStyle = '#FF2A85';
+      ctx.lineWidth = 3;
+
+      for (let a = 0; a < Math.PI * 2; a += 0.1) {
+        let r = headR;
+        if (a > Math.PI * 0.2 && a < Math.PI * 0.8) {
+          r += sadness * 25 - anger * 12;
+        } else if (a > Math.PI * 1.2 && a < Math.PI * 1.8) {
+          r += anger * 20;
+        }
+        r += Math.sin(a * 5) * (voidVal * 10);
+
+        const px = Math.cos(a) * (r + envy * 8);
+        const py = Math.sin(a) * (r + headStretchY * 0.6);
+        if (a === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // 左目
+      ctx.save();
+      ctx.translate(-headR * 0.4 - eyeStretchX / 2, -headR * 0.15 + eyeDroop);
+      ctx.rotate((sadness - anger) * 0.4);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, Math.max(5, 14 + eyeStretchX * 0.8), Math.max(3, 8 + anger * 8), 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#08080A';
+      ctx.fill();
+      ctx.strokeStyle = '#00FFFF';
+      ctx.lineWidth = 2; ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc((envy - 0.5) * 8, (unfairness - 0.5) * 5, 4, 0, Math.PI * 2);
+      ctx.fillStyle = '#FF2A85'; ctx.fill();
+      ctx.restore();
+
+      // 右目
+      ctx.save();
+      ctx.translate(headR * 0.38 + eyeStretchX / 3, -headR * 0.15 - eyeDroop / 2);
+      ctx.rotate((anger - sadness) * 0.5);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, Math.max(5, 12 + anger * 12), Math.max(3, 10 + sadness * 6), 0.2, 0, Math.PI * 2);
+      ctx.fillStyle = '#08080A';
+      ctx.fill();
+      ctx.strokeStyle = '#CCFF00';
+      ctx.lineWidth = 2; ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc((0.5 - envy) * 6, (0.5 - anger) * 6, 3.5, 0, Math.PI * 2);
+      ctx.fillStyle = '#CCFF00'; ctx.fill();
+      ctx.restore();
+
+      // 鼻
+      ctx.beginPath();
+      ctx.moveTo(0, -8);
+      ctx.lineTo(-headSkewX * 0.2, headR * 0.22);
+      ctx.lineTo(6, headR * 0.25);
+      ctx.strokeStyle = '#121216';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // 口
+      ctx.beginPath();
+      const mouthY = headR * 0.4;
+      ctx.moveTo(-20 - envy * 8, mouthY + mouthContort);
+      ctx.quadraticCurveTo(
+        0, mouthY - mouthContort * 1.3 + (sadness * 20),
+        20 + anger * 12, mouthY - mouthContort
+      );
+      ctx.strokeStyle = '#FF2A85';
+      ctx.lineWidth = 3.5;
+      ctx.stroke();
+
+      ctx.restore();
+
+      // POLA-APEX メトリクス表示
+      if (showMetrics) {
+        ctx.fillStyle = '#FF2A85';
+        ctx.font = '10px "Space Grotesk", sans-serif';
+
+        const labels = [
+          { text: `いらいら: ${vibesData.anger}%`, x: cx, y: 18 },
+          { text: `理不尽: ${vibesData.unfairness}%`, x: width - 45, y: cy - 15 },
+          { text: `虚無: ${vibesData.void}%`, x: width - 35, y: height - 25 },
+          { text: `嫉妬: ${vibesData.envy}%`, x: 40, y: height - 25 },
+          { text: `悲しい: ${vibesData.sadness}%`, x: 30, y: cy - 15 },
+        ];
+
+        labels.forEach(lbl => {
+          ctx.fillText(lbl.text, lbl.x - 20, lbl.y);
+          ctx.beginPath();
+          ctx.arc(lbl.x - 25, lbl.y - 3, 2, 0, Math.PI * 2);
+          ctx.fillStyle = '#CCFF00'; ctx.fill();
+        });
+
+        ctx.fillStyle = '#6B7280';
+        ctx.font = '9px "DotGothic16"';
+        ctx.fillText(`DISTORTION: ${Math.round((anger+sadness+unfairness+envy+voidVal)*20)}%`, 10, height - 8);
+        ctx.fillText(`ID: OTK-${Math.floor(anger*999)}`, width - 80, height - 8);
+      }
+    }
+
+    // --- メインレンダリング関数 ---
+    function renderApp() {
+      const root = document.getElementById('app-root');
+      if (!root) return;
+
+      root.innerHTML = `
+        <!-- ヘッダー -->
+        <header class="border-b-2 border-brand-pink bg-black text-white sticky top-0 z-40">
+          <div style="background-color: #FF2A85; color: #000; padding: 4px 0;" class="overflow-hidden">
+            <div class="animate-marquee">
+              <span class="mx-4 font-mono font-bold text-xs">ENJO-OTAKIAGE • 感情の爆破と解脱 • A V A N T - G A R D E C A T H A R S I S • 歪みと合掌 • 怒りをアートに昇華せよ</span>
+              <span class="mx-4 font-mono font-bold text-xs">ENJO-OTAKIAGE • 感情の爆破と解脱 • A V A N T - G A R D E C A T H A R S I S • 歪みと合掌 • 怒りをアートに昇華せよ</span>
+            </div>
+          </div>
+
+          <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3 cursor-pointer" id="btn-header-logo">
+              <div class="w-8 h-8 bg-brand-pink text-black font-black font-display text-xl flex items-center justify-center transform -rotate-3 border-2 border-white">
+                炎
+              </div>
+              <div>
+                <h1 class="font-display font-bold text-lg md:text-xl tracking-wider text-white flex items-center gap-2">
+                  ENJO <span class="text-brand-pink text-xs px-1 bg-white text-black font-mono">お焚き上げ</span>
+                </h1>
+                <p class="text-[10px] text-zinc-400 font-mono">AVANT-GARDE PURIFICATION PLATFORM</p>
+              </div>
+            </div>
+
+            ${currentView === 'home' ? `
+              <button id="btn-reconfig" class="text-xs font-mono border border-brand-pink/60 px-3 py-1 text-brand-pink hover:bg-brand-pink hover:text-black transition-all flex items-center gap-1">
+                ⚙️ 感情再設定
+              </button>
+            ` : ''}
+          </div>
+        </header>
+
+        <!-- メインコンテンツ -->
+        <main class="flex-1 max-w-5xl w-full mx-auto p-4 md:p-6 flex flex-col">
+          ${currentView === 'vibe_check' ? renderVibeCheckView() : renderHomeView()}
+        </main>
+
+        <!-- フッター -->
+        <footer class="border-t border-zinc-800 bg-black py-4 text-center font-mono text-[11px] text-zinc-600">
+          ENJO-OTAKIAGE © 2026 / AVANT-GARDE CATHARSIS LAB. ALL RIGHTS RESERVED.
+        </footer>
+      `;
+
+      setupEventListeners();
+
+      if (currentView === 'vibe_check') {
+        const faceCanvas = document.getElementById('vibe-face-canvas');
+        if (faceCanvas) {
+          faceCanvas.width = 280;
+          faceCanvas.height = 280;
+          drawDistortedFace(faceCanvas, vibes, true);
+        }
+      } else if (currentView === 'home') {
+        if (activeTab === 'chaos_gallery') {
+          posts.forEach(post => {
+            const cardCanvas = document.getElementById(`card-canvas-${post.id}`);
+            if (cardCanvas) {
+              cardCanvas.width = 50;
+              cardCanvas.height = 50;
+              drawDistortedFace(cardCanvas, post.authorVibe, false);
+            }
+          });
+        } else if (activeTab === 'profile') {
+          const profileCanvas = document.getElementById('profile-face-canvas');
+          if (profileCanvas) {
+            profileCanvas.width = 220;
+            profileCanvas.height = 220;
+            drawDistortedFace(profileCanvas, vibes, true);
+          }
+        }
+      }
+    }
+
+    // --- STEP 1: WHAT'S YOUR VIBE TODAY? View ---
+    function renderVibeCheckView() {
+      return `
+        <div class="flex-1 flex flex-col items-center justify-center py-4">
+          <div class="text-center mb-6">
+            <span class="text-brand-pink font-mono text-xs tracking-widest uppercase bg-brand-pink/10 px-3 py-1 border border-brand-pink/30">
+              Step 01 / Vibe Analysis
+            </span>
+            <h2 class="text-2xl md:text-4xl font-display font-black tracking-tight mt-2 text-white">
+              WHAT’S YOUR VIBE TODAY?
+            </h2>
+            <p class="text-sm text-zinc-400 mt-1">
+              今のぐちゃぐちゃな感情をパラメータで入力してください。あなたの顔が歪みます。
+            </p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center w-full max-w-3xl bg-black/80 p-6 border border-zinc-800 backdrop-blur-md">
+            <div class="flex flex-col items-center justify-center">
+              <div class="relative inline-block border-2 border-brand-pink/40 bg-black/90 p-2 shadow-[0_0_25px_rgba(255,42,133,0.2)]">
+                <canvas id="vibe-face-canvas" class="block max-w-full h-auto cursor-pointer"></canvas>
+                <div class="absolute top-2 right-2 bg-brand-pink text-black text-[9px] font-mono px-1 font-bold">
+                  POLA-APEX_VIBE
+                </div>
+              </div>
+              <p class="text-[11px] font-mono text-zinc-500 mt-3 text-center">
+                ※設定された歪み顔は架空のアバターとして保存されます
+              </p>
+            </div>
+
+            <div class="space-y-4 font-mono">
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-red-400 font-bold">🔥 いらいら (Anger)</span>
+                  <span class="text-brand-pink" id="val-anger">${vibes.anger}%</span>
+                </div>
+                <input type="range" min="0" max="100" value="${vibes.anger}" data-key="anger" class="vibe-slider w-full accent-brand-pink bg-zinc-800 h-2 cursor-pointer">
+              </div>
+
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-blue-400 font-bold">🌧 悲しい (Sadness)</span>
+                  <span class="text-brand-pink" id="val-sadness">${vibes.sadness}%</span>
+                </div>
+                <input type="range" min="0" max="100" value="${vibes.sadness}" data-key="sadness" class="vibe-slider w-full accent-brand-pink bg-zinc-800 h-2 cursor-pointer">
+              </div>
+
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-yellow-400 font-bold">⚡ 理不尽 (Unfairness)</span>
+                  <span class="text-brand-pink" id="val-unfairness">${vibes.unfairness}%</span>
+                </div>
+                <input type="range" min="0" max="100" value="${vibes.unfairness}" data-key="unfairness" class="vibe-slider w-full accent-brand-pink bg-zinc-800 h-2 cursor-pointer">
+              </div>
+
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-emerald-400 font-bold">👁 嫉妬 (Envy)</span>
+                  <span class="text-brand-pink" id="val-envy">${vibes.envy}%</span>
+                </div>
+                <input type="range" min="0" max="100" value="${vibes.envy}" data-key="envy" class="vibe-slider w-full accent-brand-pink bg-zinc-800 h-2 cursor-pointer">
+              </div>
+
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-purple-400 font-bold">👻 虚無 (Void)</span>
+                  <span class="text-brand-pink" id="val-void">${vibes.void}%</span>
+                </div>
+                <input type="range" min="0" max="100" value="${vibes.void}" data-key="void" class="vibe-slider w-full accent-brand-pink bg-zinc-800 h-2 cursor-pointer">
+              </div>
+
+              <button id="btn-enter-home" class="w-full py-3 mt-4 bg-brand-pink text-black font-display font-bold text-base hover:bg-white hover:text-black transition-colors border-2 border-black tracking-wider flex items-center justify-center gap-2 shadow-[4px_4px_0px_#CCFF00]">
+                <span>この歪み顔で入場する</span>
+                <span>➔</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // --- STEP 2: HOME View ---
+    function renderHomeView() {
+      return `
+        <div class="flex-1 flex flex-col space-y-6">
+          <div class="flex border-b border-zinc-800 font-display">
+            <button id="tab-solo" class="flex-1 py-3 px-2 text-center text-sm md:text-base font-bold border-b-2 transition-all flex items-center justify-center gap-2 ${
+              activeTab === 'solo_burn' ? 'border-brand-pink text-brand-pink bg-brand-pink/10' : 'border-transparent text-zinc-500 hover:text-zinc-300'
+            }">
+              <span>🔥 ソロお焚き上げ</span>
+            </button>
+
+            <button id="tab-chaos" class="flex-1 py-3 px-2 text-center text-sm md:text-base font-bold border-b-2 transition-all flex items-center justify-center gap-2 ${
+              activeTab === 'chaos_gallery' ? 'border-brand-pink text-brand-pink bg-brand-pink/10' : 'border-transparent text-zinc-500 hover:text-zinc-300'
+            }">
+              <span>💀 匿名の供養空間</span>
+              <span class="bg-brand-neon text-black text-[9px] px-1.5 py-0.5 rounded-full font-mono font-bold">${posts.length}</span>
+            </button>
+
+            <button id="tab-profile" class="flex-1 py-3 px-2 text-center text-sm md:text-base font-bold border-b-2 transition-all flex items-center justify-center gap-2 ${
+              activeTab === 'profile' ? 'border-brand-pink text-brand-pink bg-brand-pink/10' : 'border-transparent text-zinc-500 hover:text-zinc-300'
+            }">
+              <span>👤 歪みID</span>
+            </button>
+          </div>
+
+          ${activeTab === 'solo_burn' ? renderSoloBurnTab() : ''}
+          ${activeTab === 'chaos_gallery' ? renderChaosGalleryTab() : ''}
+          ${activeTab === 'profile' ? renderProfileTab() : ''}
+        </div>
+      `;
+    }
+
+    // --- TAB 1: ソロお焚き上げ ---
+    function renderSoloBurnTab() {
+      return `
+        <div class="flex-1 flex flex-col max-w-2xl mx-auto w-full relative">
+          <div id="solo-burn-card" class="bg-black/80 border-2 border-brand-pink/50 p-6 relative overflow-hidden shadow-[0_0_30px_rgba(255,42,133,0.15)]">
+
+            <canvas id="fire-canvas" class="absolute inset-0 z-50 pointer-events-none w-full h-full hidden"></canvas>
+
+            <div class="flex items-center justify-between mb-4 pb-3 border-b border-zinc-800">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 bg-brand-pink rounded-full animate-ping"></span>
+                <span class="font-mono text-xs text-zinc-400">STATUS: READY TO PURIFY</span>
+              </div>
+              <span class="font-mono text-xs text-brand-neon">一人で即座に燃やす</span>
+            </div>
+
+            <div class="mb-4">
+              <label class="block font-mono text-xs text-zinc-400 mb-2">
+                // 吐き出したい愚痴・嫌な出来事を入力してください
+              </label>
+              <textarea
+                id="rant-textarea"
+                placeholder="例: 上司の理不尽な指示、元カノへの未練、満員電車でのイライラ... 何でも書いて燃やしてください。"
+                rows="6"
+                class="w-full bg-zinc-950/90 text-zinc-100 p-4 border border-zinc-800 focus:border-brand-pink focus:outline-none font-sans text-base leading-relaxed resize-none"
+              >${rantText}</textarea>
+            </div>
+
+            <div class="mb-6">
+              <span class="block font-mono text-xs text-zinc-400 mb-2">CATEGORY TAG:</span>
+              <div class="flex flex-wrap gap-2 font-mono text-xs">
+                ${['#仕事', '#人間関係', '#恋愛', '#自分', '#理不尽', '#社会'].map(tag => `
+                  <button data-tag="${tag}" class="tag-btn px-3 py-1 border ${
+                    selectedTag === tag ? 'bg-brand-pink text-black border-brand-pink font-bold' : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-600'
+                  }">${tag}</button>
+                `).join('')}
+              </div>
+            </div>
+
+            <button
+              id="btn-execute-burn"
+              class="w-full py-4 text-center font-display font-black text-lg tracking-widest uppercase transition-all duration-200 border-2 bg-brand-pink text-black border-white hover:bg-brand-neon hover:text-black shadow-[6px_6px_0px_#FFFFFF] cursor-pointer"
+            >
+              🔥 燃やして解脱する (SOLO BURN)
+            </button>
+
+            <p class="text-[10px] font-mono text-zinc-500 text-center mt-3">
+              ※お焚き上げされた内容は匿名化され「匿名の供養空間」に漂流します
+            </p>
+          </div>
+        </div>
+      `;
+    }
+
+    // --- TAB 2: 匿名の供養空間 ---
+    function renderChaosGalleryTab() {
+      return `
+        <div class="flex-1 flex flex-col space-y-4">
+          <div class="flex items-center justify-between border-b border-zinc-800 pb-2">
+            <div>
+              <h3 class="font-display font-bold text-lg text-white flex items-center gap-2">
+                <span>匿名の供養空間</span>
+                <span class="text-xs font-mono text-brand-pink font-normal">// CHAOS GALLERY</span>
+              </h3>
+              <p class="text-xs text-zinc-400">誰かの燃やされた怨念に「合掌」を送り、さらに激しく燃やし尽くそう。</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+            ${posts.map(post => `
+              <div id="post-card-${post.id}" class="relative p-5 transition-all transform hover:-translate-y-1 ${
+                post.colorStyle === 'pink' ? 'bg-[#FF2A85] text-black border-2 border-black' : 'bg-zinc-900 text-zinc-100 border-2 border-zinc-700'
+              }">
+                <div class="absolute top-1/2 -left-3 w-6 h-6 rounded-full bg-brand-dark border-r-2 ${post.colorStyle === 'pink' ? 'border-black' : 'border-zinc-700'}"></div>
+                <div class="absolute top-1/2 -right-3 w-6 h-6 rounded-full bg-brand-dark border-l-2 ${post.colorStyle === 'pink' ? 'border-black' : 'border-zinc-700'}"></div>
+
+                <div class="flex justify-between items-start border-b border-current pb-2 mb-3 font-mono text-xs">
+                  <div class="flex items-center gap-2">
+                    <span class="font-bold border border-current px-1 text-[10px]">${post.vibeCategory}</span>
+                    <span>${post.tag}</span>
+                  </div>
+                  <span class="opacity-75">${post.timestamp}</span>
+                </div>
+
+                <p class="font-sans font-bold text-base leading-relaxed mb-4 tracking-wide">
+                  "${post.text}"
+                </p>
+
+                <div class="flex items-center justify-between pt-3 border-t border-dashed border-current font-mono text-xs">
+                  <div class="flex items-center gap-2">
+                    <div class="border border-current p-0.5 bg-black">
+                      <canvas id="card-canvas-${post.id}" class="block"></canvas>
+                    </div>
+                    <div>
+                      <div class="text-[10px] opacity-75">ANONYMOUS_FACE</div>
+                      <div class="font-bold text-[11px]">合掌度: <span id="gassho-count-${post.id}">${post.gasshoCount}</span></div>
+                    </div>
+                  </div>
+
+                  <button data-postid="${post.id}" class="btn-gassho px-4 py-2 font-display font-black text-xs uppercase flex items-center gap-1.5 transition-all transform active:scale-90 ${
+                    post.colorStyle === 'pink' ? 'bg-black text-white hover:bg-white hover:text-black border border-black' : 'bg-brand-pink text-black hover:bg-brand-neon border border-white'
+                  }">
+                    <span>🙏 合掌</span>
+                  </button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    // --- TAB 3: 歪みID ---
+    function renderProfileTab() {
+      return `
+        <div class="flex-1 flex flex-col items-center justify-center max-w-lg mx-auto w-full py-4">
+          <div class="bg-zinc-950 border-2 border-brand-pink p-6 w-full shadow-[8px_8px_0px_#FF2A85]">
+            <div class="flex justify-between items-center border-b-2 border-brand-pink pb-3 mb-4 font-mono">
+              <div>
+                <div class="text-xs text-brand-pink font-bold">DISTORTION PASSPORT</div>
+                <div class="text-lg font-bold text-white font-display">USER_ID: #ANON-${Math.floor(vibes.anger * 77)}</div>
+              </div>
+              <div class="text-right text-[10px] text-zinc-400">
+                ISSUED BY<br>ENJO OTAKIAGE
+              </div>
+            </div>
+
+            <div class="flex flex-col items-center mb-6">
+              <div class="relative inline-block border-2 border-brand-pink/40 bg-black/90 p-2 shadow-[0_0_25px_rgba(255,42,133,0.2)]">
+                <canvas id="profile-face-canvas" class="block"></canvas>
+              </div>
+
+              <div class="grid grid-cols-3 gap-2 w-full mt-4 text-center font-mono text-xs border border-zinc-800 p-3 bg-black">
+                <div>
+                  <div class="text-zinc-500 text-[10px]">お焚き上げ数</div>
+                  <div class="text-brand-pink font-bold text-base">${burnStats.totalBurned}回</div>
+                </div>
+                <div class="border-x border-zinc-800">
+                  <div class="text-zinc-500 text-[10px]">送った合掌</div>
+                  <div class="text-brand-neon font-bold text-base">${burnStats.gasshoGiven}回</div>
+                </div>
+                <div>
+                  <div class="text-zinc-500 text-[10px]">浄化された灰</div>
+                  <div class="text-white font-bold text-base">${burnStats.ashWeight}</div>
+                </div>
+              </div>
+            </div>
+
+            <button id="btn-recreate-vibe" class="w-full py-3 bg-zinc-900 border border-zinc-700 text-zinc-200 font-mono text-xs font-bold hover:bg-brand-pink hover:text-black hover:border-brand-pink transition-colors flex items-center justify-center gap-2">
+              <span>🔄 本日の感情・顔グラフィックを作り直す</span>
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    // --- イベントリスナー登録 ---
+    function setupEventListeners() {
+      const logoBtn = document.getElementById('btn-header-logo');
+      if (logoBtn) {
+        logoBtn.onclick = () => {
+          currentView = 'vibe_check';
+          renderApp();
+        };
+      }
+
+      const reconfigBtn = document.getElementById('btn-reconfig');
+      if (reconfigBtn) {
+        reconfigBtn.onclick = () => {
+          currentView = 'vibe_check';
+          renderApp();
+        };
+      }
+
+      document.querySelectorAll('.vibe-slider').forEach(slider => {
+        slider.oninput = (e) => {
+          const key = e.target.dataset.key;
+          const val = Number(e.target.value);
+          vibes[key] = val;
+
+          const valSpan = document.getElementById(`val-${key}`);
+          if (valSpan) valSpan.innerText = `${val}%`;
+
+          soundEngine.playGlitch();
+
+          const faceCanvas = document.getElementById('vibe-face-canvas');
+          if (faceCanvas) {
+            drawDistortedFace(faceCanvas, vibes, true);
+          }
+        };
+      });
+
+      const enterBtn = document.getElementById('btn-enter-home');
+      if (enterBtn) {
+        enterBtn.onclick = () => {
+          soundEngine.playGasshoBell();
+          currentView = 'home';
+          renderApp();
+        };
+      }
+
+      const tabSolo = document.getElementById('tab-solo');
+      if (tabSolo) {
+        tabSolo.onclick = () => { activeTab = 'solo_burn'; soundEngine.playGlitch(); renderApp(); };
+      }
+      const tabChaos = document.getElementById('tab-chaos');
+      if (tabChaos) {
+        tabChaos.onclick = () => { activeTab = 'chaos_gallery'; soundEngine.playGlitch(); renderApp(); };
+      }
+      const tabProfile = document.getElementById('tab-profile');
+      if (tabProfile) {
+        tabProfile.onclick = () => { activeTab = 'profile'; soundEngine.playGlitch(); renderApp(); };
+      }
+
+      const rantArea = document.getElementById('rant-textarea');
+      if (rantArea) {
+        rantArea.oninput = (e) => {
+          rantText = e.target.value;
+        };
+      }
+
+      document.querySelectorAll('.tag-btn').forEach(btn => {
+        btn.onclick = (e) => {
+          selectedTag = e.target.dataset.tag;
+          renderApp();
+        };
+      });
+
+      const executeBurnBtn = document.getElementById('btn-execute-burn');
+      if (executeBurnBtn) {
+        executeBurnBtn.onclick = () => {
+          const textarea = document.getElementById('rant-textarea');
+          const val = textarea ? textarea.value.trim() : rantText.trim();
+          if (!val) return;
+
+          const fireCanvas = document.getElementById('fire-canvas');
+          if (fireCanvas) {
+            fireCanvas.classList.remove('hidden');
+            fireCanvas.width = fireCanvas.parentElement.clientWidth;
+            fireCanvas.height = fireCanvas.parentElement.clientHeight;
+
+            soundEngine.playBurn();
+
+            const ctx = fireCanvas.getContext('2d');
+            let particles = [];
+            for (let i = 0; i < 180; i++) {
+              particles.push({
+                x: fireCanvas.width / 2 + (Math.random() - 0.5) * 120,
+                y: fireCanvas.height / 2 + (Math.random() - 0.5) * 80,
+                vx: (Math.random() - 0.5) * 14,
+                vy: -Math.random() * 14 - 3,
+                size: Math.random() * 8 + 3,
+                color: ['#FF2A85', '#CCFF00', '#FF5500', '#FFFFFF', '#121212'][Math.floor(Math.random() * 5)],
+                alpha: 1,
+                decay: Math.random() * 0.025 + 0.015
+              });
+            }
+
+            let step = 0;
+            function animateFire() {
+              ctx.fillStyle = 'rgba(8, 8, 10, 0.25)';
+              ctx.fillRect(0, 0, fireCanvas.width, fireCanvas.height);
+              let alive = 0;
+              particles.forEach(p => {
+                if (p.alpha > 0) {
+                  alive++;
+                  p.x += p.vx;
+                  p.y += p.vy;
+                  p.alpha -= p.decay;
+                  ctx.save();
+                  ctx.globalAlpha = Math.max(0, p.alpha);
+                  ctx.fillStyle = p.color;
+                  ctx.fillRect(p.x, p.y, p.size, p.size);
+                  ctx.restore();
+                }
+              });
+              step++;
+              if (alive > 0 && step < 90) {
+                requestAnimationFrame(animateFire);
+              } else {
+                fireCanvas.classList.add('hidden');
+
+                const maxVibeKey = Object.keys(vibes).reduce((a, b) => vibes[a] > vibes[b] ? a : b);
+                const vibeNameMap = { anger: 'いらいら', sadness: '悲しい', unfairness: '理不尽', envy: '嫉妬', void: '虚無' };
+
+                posts.unshift({
+                  id: `post-${Date.now()}`,
+                  text: val,
+                  vibeCategory: vibeNameMap[maxVibeKey] || 'お焚き上げ',
+                  authorVibe: { ...vibes },
+                  timestamp: 'たった今',
+                  gasshoCount: 1,
+                  tag: selectedTag,
+                  colorStyle: Math.random() > 0.5 ? 'pink' : 'mono'
+                });
+
+                burnStats.totalBurned += 1;
+                rantText = '';
+                activeTab = 'chaos_gallery';
+                renderApp();
+              }
+            }
+            animateFire();
+          }
+        };
+      }
+
+      document.querySelectorAll('.btn-gassho').forEach(btn => {
+        btn.onclick = (e) => {
+          const postId = e.currentTarget.dataset.postid;
+          soundEngine.playGasshoBell();
+
+          const post = posts.find(p => p.id === postId);
+          if (post) {
+            post.gasshoCount += 1;
+            burnStats.gasshoGiven += 1;
+
+            const countSpan = document.getElementById(`gassho-count-${postId}`);
+            if (countSpan) countSpan.innerText = post.gasshoCount;
+
+            const card = document.getElementById(`post-card-${postId}`);
+            if (card) {
+              card.classList.add('burning-card');
+              setTimeout(() => card.classList.remove('burning-card'), 400);
+            }
+          }
+        };
+      });
+
+      const recreateBtn = document.getElementById('btn-recreate-vibe');
+      if (recreateBtn) {
+        recreateBtn.onclick = () => {
+          currentView = 'vibe_check';
+          renderApp();
+        };
+      }
+    }
+
+    window.onload = function() {
+      renderApp();
+    };
+  </script>
+</body>
+</html>
