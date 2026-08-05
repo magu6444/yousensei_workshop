@@ -138,6 +138,12 @@
       display: block;
     }
 
+    /* 掲示板・お焚き上げ・IDページでも上の歯と下の歯を表示 */
+    body.show-teeth .app-top-teeth-frame,
+    body.show-teeth .app-bottom-teeth-frame {
+      display: block;
+    }
+
     /* 牙がガツンと噛み合うアグレッシブなアニメーション */
     .app-top-teeth-frame.bite-snap {
       transform: translateX(-50%) translateY(45%);
@@ -965,8 +971,13 @@
 
       if (currentStep === 'intro') {
         document.body.classList.add('is-intro');
+        document.body.classList.remove('show-teeth');
+      } else if (currentStep === 'chaos_gallery' || currentStep === 'solo_burn' || currentStep === 'profile') {
+        document.body.classList.remove('is-intro');
+        document.body.classList.add('show-teeth');
       } else {
         document.body.classList.remove('is-intro');
+        document.body.classList.remove('show-teeth');
       }
 
       if (currentStep === 'chaos_gallery') {
@@ -1045,7 +1056,7 @@
                 currentStep === 'profile' 
                   ? (currentStep === 'vibe_check' ? 'text-white' : 'text-black') 
                   : 'text-zinc-400'
-              }">マイページ</span>
+              }">ID</span>
             </button>
           </nav>
         ` : ''}
@@ -1061,36 +1072,8 @@
           }
         };
       } else if (currentStep === 'profile') {
-        // --- SVGサークルテキスト（卵形は固定、文字のみがまわる）のJS制御 ---
-        const svg = document.getElementById('profile-orbit-svg');
-        const textPath = document.getElementById('orbit-text-path');
-        if (svg && textPath) {
-          const svgW = svg.clientWidth || 350;
-          const svgH = svg.clientHeight || 350;
-          const cx = svgW / 2;
-          const cy = svgH / 2;
-
-          // 縦長卵型の楕円軌道 (rx=105, ry=155) - 少し上にシフト (cy - 35)
-          const rx = svgW * 0.32;
-          const ry = svgH * 0.44;
-          const shiftY = cy - 35;
-          const outerPath = document.getElementById('orbit-outer');
-          if (outerPath) {
-            outerPath.setAttribute('d',
-              `M ${cx - rx},${shiftY} a ${rx},${ry} 0 1,1 ${rx*2},0 a ${rx},${ry} 0 1,1 -${rx*2},0`
-            );
-          }
-
-          // 文字がまわるアニメーション (startOffset をスライドさせる)
-          let textOffset = 0;
-          const animateTextFlow = () => {
-            if (!document.getElementById('profile-orbit-svg')) return; // ページ遷移で停止
-            textOffset = (textOffset + 0.35) % 100;
-            textPath.setAttribute('startOffset', `${textOffset}%`);
-            requestAnimationFrame(animateTextFlow);
-          };
-          requestAnimationFrame(animateTextFlow);
-        }
+        // レーダーチャートのポリゴンを描画
+        updateRadarPolygon();
       }
     }
 
@@ -1448,72 +1431,103 @@
       `;
     }
 
-    // --- マイページ: 登録した今日の顔 + 卵型サークル文字アニメーション ---
+    // --- IDページ: レーダーチャート + 五角形顔 + お焚き上げIDタイトル ---
     function renderProfileView() {
       const t = i18n[currentLang];
-      // サークルに流れる多言語テキスト（「現実世界では話せない」の多言語版）
-      const circleText = "現実世界では話せない    不能在现实世界中谈论    Don't talk about it in the real world    현실 세계에서 말하지 마라    Ne parlez pas dans le monde réel    Не говори об этом в reaな世界で    No hables en el mundo real    ";
-      
+      const today = new Date();
+      const dateStr = `${today.getFullYear()}.${String(today.getMonth()+1).padStart(2,'0')}.${String(today.getDate()).padStart(2,'0')}`;
+      const activePhotoSrc = (capturedPhotoImg && capturedPhotoImg.src) ? capturedPhotoImg.src : 'images/face_preset_0.jpg';
+
+      // radar labels (matching image: flowy, deep, edgy, moody + center)
+      // map from vibes: anger=edgy, sadness=moody, unfairness=deep, envy=flowy, void=center
+      const v = vibes;
+      const radarPoints = [
+        { label: 'flowy',  val: v.envy / 100,       angle: -Math.PI/2 },
+        { label: 'deep',   val: v.unfairness / 100,  angle: -Math.PI/2 + 2*Math.PI/4 },
+        { label: 'edgy',   val: v.anger / 100,       angle: -Math.PI/2 + 2*2*Math.PI/4 },
+        { label: 'moody',  val: v.sadness / 100,     angle: -Math.PI/2 + 3*2*Math.PI/4 },
+      ];
+
       return `
-        <div class="flex-1 flex flex-col items-center justify-between fade-in bg-white overflow-hidden pb-12" style="height: calc(100vh - 5rem); position: relative; padding-top: 4vh;">
-          
-          <!-- サークルテキスト + 中央顔 のコンテナ（上にマージンを取って配置） -->
-          <div class="relative flex items-center justify-center mt-2" style="width: min(88vw, 380px); height: min(88vw, 380px);">
-            
-            <!-- SVGサークルテキスト（卵形楕円、文字のみ回転） -->
-            <svg id="profile-orbit-svg" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible;">
-              <defs>
-                <path id="orbit-outer" d="" />
-              </defs>
-              <!-- 卵型の輪は一つ -->
-              <text font-size="13" font-weight="bold" fill="#111" font-family="'LINE Seed JP', sans-serif" letter-spacing="1.5">
-                <textPath id="orbit-text-path" href="#orbit-outer" startOffset="0%">
-                  ${circleText}${circleText}
-                </textPath>
-              </text>
+        <div class="flex-1 flex flex-col items-center fade-in bg-white" style="height: calc(100dvh - 4.5rem); padding-top: max(2rem, env(safe-area-inset-top)); padding-bottom: 0; overflow: hidden; position: relative;">
+
+          <!-- レーダーチャート + 顔 -->
+          <div class="relative flex-1 flex items-center justify-center w-full">
+            <!-- SVG レーダーチャート -->
+            <svg id="profile-radar-svg" viewBox="-160 -160 320 320" style="width: min(85vw, 340px); height: min(85vw, 340px); position: absolute;">
+              <!-- 同心円 (ガイド) -->
+              <circle cx="0" cy="0" r="40"  stroke="#d4d4d4" stroke-width="0.7" fill="none" stroke-dasharray="3,4"/>
+              <circle cx="0" cy="0" r="80"  stroke="#d4d4d4" stroke-width="0.7" fill="none" stroke-dasharray="3,4"/>
+              <circle cx="0" cy="0" r="120" stroke="#d4d4d4" stroke-width="0.7" fill="none" stroke-dasharray="3,4"/>
+              <!-- 軸線 -->
+              <line x1="0" y1="-130" x2="0" y2="130"  stroke="#d4d4d4" stroke-width="0.7"/>
+              <line x1="-130" y1="0" x2="130" y2="0"  stroke="#d4d4d4" stroke-width="0.7"/>
+              <!-- データポリゴン -->
+              <polygon id="radar-polygon" points="" fill="rgba(0,0,0,0.06)" stroke="#111" stroke-width="1.2"/>
+              <!-- 軸ラベル -->
+              <text x="0" y="-138" text-anchor="middle" font-size="12" font-weight="bold" font-family="serif" fill="#444">flowy</text>
+              <text x="138" y="4" text-anchor="start"  font-size="12" font-weight="bold" font-family="serif" fill="#444">deep</text>
+              <text x="0" y="152" text-anchor="middle" font-size="12" font-weight="bold" font-family="serif" fill="#444">edgy</text>
+              <text x="-138" y="4" text-anchor="end"   font-size="12" font-weight="bold" font-family="serif" fill="#444">moody</text>
             </svg>
 
-            <!-- 中央の顔（ふわふわ浮遊のみ、回転なし） -->
-            <div class="relative z-10 flex flex-col items-center justify-center" style="margin-top: -70px;">
-              <canvas id="profile-face-canvas" style="width:160px;height:160px;display:block;border-radius:50%;overflow:hidden;"></canvas>
+            <!-- 中央: 五角形の顔 -->
+            <div class="relative z-10" style="animation: face-float-id 4s ease-in-out infinite;">
+              <img src="${activePhotoSrc}" style="
+                width: 120px; height: 120px;
+                object-fit: cover;
+                clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
+                display: block;
+              " />
             </div>
-
           </div>
 
-          <!-- 再設定ボタン（卵形や顔と被らないよう、完全に下部に配置） -->
-          <div class="w-full flex justify-center mt-8 mb-24 z-20">
-            <button id="btn-recreate-vibe" class="px-10 py-3.5 bg-black text-white text-xs font-bold rounded-full hover:bg-zinc-700 hover:scale-105 active:scale-95 transition-all shadow-md">
+          <!-- タイトル + 日付 -->
+          <div class="w-full px-5 pb-3 flex-shrink-0">
+            <div class="flex items-baseline gap-3">
+              <span style="font-family: 'LINE Seed JP', serif; font-size: 9vw; font-weight: 900; color: #111; letter-spacing: -0.03em; line-height: 1;">お焚き上げID</span>
+              <span style="font-size: 11px; color: #888; font-family: monospace; letter-spacing: 0.05em;">${dateStr}</span>
+            </div>
+            <!-- 気分変えるボタン -->
+            <button id="btn-recreate-vibe" class="mt-2 px-6 py-2 bg-black text-white text-xs font-bold rounded-full hover:bg-zinc-700 hover:scale-105 active:scale-95 transition-all shadow-md">
               気分を変える
             </button>
           </div>
+
         </div>
 
         <style>
-          @keyframes orbit-rotate-cw {
-            from { transform: rotate(0deg); }
-            to   { transform: rotate(360deg); }
-          }
-          @keyframes orbit-rotate-ccw {
-            from { transform: rotate(0deg); }
-            to   { transform: rotate(-360deg); }
-          }
-          @keyframes face-float {
-            0%, 100% { transform: translateY(0px) rotate(-1deg); }
-            50%      { transform: translateY(-10px) rotate(1deg); }
-          }
-          #profile-face-canvas {
-            animation: face-float 4s ease-in-out infinite;
-          }
-          #orbit-outer-group {
-            transform-origin: center;
-            animation: orbit-rotate-cw 22s linear infinite;
-          }
-          #orbit-inner-group {
-            transform-origin: center;
-            animation: orbit-rotate-ccw 15s linear infinite;
+          @keyframes face-float-id {
+            0%, 100% { transform: translateY(0px); }
+            50%      { transform: translateY(-8px); }
           }
         </style>
       `;
+    }
+
+    // レーダーチャートのポリゴン計算（DOMが整ってから実行）
+    function updateRadarPolygon() {
+      const polygon = document.getElementById('radar-polygon');
+      if (!polygon) return;
+      const r = 120;
+      const v = vibes;
+      const vals = [
+        v.envy / 100,
+        v.unfairness / 100,
+        v.anger / 100,
+        v.sadness / 100,
+      ];
+      const angles = [
+        -Math.PI/2,
+        -Math.PI/2 + Math.PI/2,
+        -Math.PI/2 + Math.PI,
+        -Math.PI/2 + 3*Math.PI/2,
+      ];
+      const pts = vals.map((val, i) => {
+        const dist = val * r;
+        return `${(dist * Math.cos(angles[i])).toFixed(1)},${(dist * Math.sin(angles[i])).toFixed(1)}`;
+      });
+      polygon.setAttribute('points', pts.join(' '));
     }
 
     // --- 本格🔥絵文字の全画面ダイナミック火炎物理シミュレーション (3秒間持続・ゆらゆら直進上昇) ---
