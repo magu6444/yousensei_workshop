@@ -132,15 +132,14 @@
       transition: transform 0.75s cubic-bezier(0.77, 0, 0.175, 1);
     }
 
-    /* タイトル画面のみ牙フレームを表示 */
+    /* タイトル画面のみ上下の歯フレームを両方表示 */
     body.is-intro .app-top-teeth-frame,
     body.is-intro .app-bottom-teeth-frame {
       display: block;
     }
 
-    /* 掲示板・お焚き上げ・IDページでも上の歯と下の歯を表示 */
-    body.show-teeth .app-top-teeth-frame,
-    body.show-teeth .app-bottom-teeth-frame {
+    /* 掲示板・お焚き上げ・IDページでは上の歯のみ表示（下はなし） */
+    body.show-teeth .app-top-teeth-frame {
       display: block;
     }
 
