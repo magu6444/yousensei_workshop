@@ -179,10 +179,13 @@
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       row-gap: 0.15rem;
-      column-gap: -7px;
+      column-gap: 0px;
       width: 100%;
       max-width: 245px;
       margin: 0 auto;
+      /* 文字がscaleX(0.65)で縮むぶん、グリッド全体を左へシフトして視覚的に中央揃え */
+      /* グリッド幅64vw → 見た目41.6vw → ずれ = (64 - 41.6)/2 = 11.2vw */
+      transform: translateX(-11.2vw);
     }
 
     .poster-cell {
